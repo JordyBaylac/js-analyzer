@@ -8,7 +8,7 @@
             "name": "Current TS File",
             "type": "node",
             "request": "launch",
-            "args": ["${relativeFile}", "C:/Users/Jordy/Documents/projects/flutter_chorizos"],
+            "args": ["${relativeFile}", "C:/svnhead/flx/CCServer/config"],
             "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
             "sourceMaps": true,
             "cwd": "${workspaceRoot}",

@@ -29,9 +29,13 @@ export class DirectoryAnalyzer {
         };
     }
 
+    getStrategiesDescription() {
+        return '[' + this.strategies.map(s => s.constructor.name).join(',') + ']';        
+    }
+
     async run() {
         if (this.dirPath) {
-            console.log('Applying ' + (JSON.stringify(this.strategies)) + ' strategies over directory ', this.dirPath);
+            console.log('Applying ' + (this.getStrategiesDescription()) + ' strategies over directory ', this.dirPath);
             try {
                 let files = await this.getAllFiles(this.dirPath);
                 await this.analyzeFiles(files);
@@ -45,7 +49,7 @@ export class DirectoryAnalyzer {
     }
 
     async analyzeFiles(filesToProcess) {
-        console.table(filesToProcess);
+        // console.table(filesToProcess);
         for (var file of filesToProcess) {
             let fileAnalyzer = new FileAnalyzer(file.path, this.strategies);
             await fileAnalyzer.run();

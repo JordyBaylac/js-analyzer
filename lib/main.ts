@@ -1,6 +1,6 @@
 
 import { AnalyzerFactory } from './analysis/analyzer/analyzer_factory';
-import { GlobalVariablesStrategy } from './analysis/strategies/global_variables_strategy';
+import { GlobalVariablesStrategy } from './analysis/strategies/global_variables/global_variables_strategy';
 
 
 function printHeader(filePath) {
@@ -20,7 +20,7 @@ async function main(factory: AnalyzerFactory) {
         let analyzer = factory.createAnalyzer(filePath, [new GlobalVariablesStrategy()]);
         await analyzer.run();
 
-        console.log(JSON.stringify(analyzer.getStats()));
+        // console.log(JSON.stringify(analyzer.getStats()));
 
     }
     else {

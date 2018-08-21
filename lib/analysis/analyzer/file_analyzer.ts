@@ -1,5 +1,7 @@
 import { IStrategy } from '../strategies/i_strategy';
-
+import * as esprima from 'esprima';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export class FileAnalyzer {
 
@@ -11,11 +13,22 @@ export class FileAnalyzer {
         this.strategies = strategies || [];
     }
 
+    getStrategiesDescription() {
+        return '[' + this.strategies.map(s => s.constructor.name).join(',') + ']';
+    }
+
     async run() {
         if (this.fileToProcess) {
-            console.log('Applying '+ (JSON.stringify(this.strategies)) +' strategies over file ', this.fileToProcess);
-            for(var strategy of this.strategies){
-                strategy.process(esprimaProgram);
+            console.log('Applying ' + (this.getStrategiesDescription()) + ' strategies over file ', this.fileToProcess);
+            let program = fs.readFileSync(this.fileToProcess, 'utf8');
+            program = program.replace(/#include\s+\"(.*)\"/g, '_include ("asd")');
+            try {
+                const ast = esprima.parseScript(program, { loc: true });
+                for (var strategy of this.strategies) {
+                    strategy.process(ast);
+                }
+            } catch (err) {
+                console.error('Error processing file ' + this.fileToProcess);
             }
         }
         else
