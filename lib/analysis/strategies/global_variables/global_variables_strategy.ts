@@ -268,14 +268,14 @@ export class GlobalVariablesStrategy implements IStrategy {
         if (utils.isBinaryExpression(node)) {
 
             if (utils.isIdentifier(node["left"])) {
-
+                node["left"]["parent"] = node;
                 let varname = node["left"].name;
                 let description = '(global use) ' + varname;
                 let leakType: ILeakType = { name: varname, description: description, location: node["left"].loc, node: node["left"] };
                 uses.push(leakType);
 
             } else if (utils.isIdentifier(node["right"])) {
-
+                node["right"]["parent"] = node;
                 let varname = node["right"].name;
                 let description = '(global use) ' + varname;
                 let leakType: ILeakType = { name: varname, description: description, location: node["right"].loc, node: node["right"] };
@@ -297,6 +297,7 @@ export class GlobalVariablesStrategy implements IStrategy {
                 if (utils.isIdentifier(a)) {
                     let varname = a.name;
                     let description = '(global use) ' + varname;
+                    a["parent"] = node;
                     let leakType: ILeakType = { name: varname, description: description, location: a.loc, node: a };
                     uses.push(leakType);
                 }

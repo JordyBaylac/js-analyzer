@@ -117,7 +117,7 @@ export function isCatchArgument(identifierName, node) {
     let res = false;
 
     if (node) {
-        let parent = node.parent;
+        let parent = node;
         let processed = new WeakMap();
         while (parent != null) {
             if(processed.has(parent)){
