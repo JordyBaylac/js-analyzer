@@ -5,8 +5,8 @@ export function isVariableDeclarator(node) {
 }
 
 //http://esprima.org/demo/parse.html?code=var%20some_variable%20%3D%206%3B%0A
-export function isAssignmentExpression(node) {    
-    return node.type == 'AssignmentExpression'; 
+export function isAssignmentExpression(node) {
+    return node.type == 'AssignmentExpression';
 }
 
 export function isMemberExpression(node) {
@@ -25,8 +25,12 @@ export function isExpressionStatement(node) {
     return node.type == 'ExpressionStatement';
 }
 
+export function isCallExpression(node) {
+    return node.type === 'CallExpression';
+}
+
 export function isIIFE(node) {
-    return node.type === 'CallExpression' && node.callee.type === 'FunctionExpression';
+    return isCallExpression(node) && node.callee.type === 'FunctionExpression';
 }
 
 export function isProgam(node) {
@@ -35,6 +39,14 @@ export function isProgam(node) {
 
 export function isThisExpression(node) {
     return node.type === 'ThisExpression';
+}
+
+export function isIdentifier(node) {
+    return node.type === "Identifier";
+}
+
+export function isBinaryExpression(node) {
+    return node.type === "BinaryExpression";
 }
 
 export function isVarDefined(varName, scopeChain) {
@@ -65,7 +77,7 @@ export function compoundMemberName(memberExpression) {
         name += '.' + memberExpression.property.name;
     }
 
-    if(isThisExpression(memberExpression.object)){
+    if (isThisExpression(memberExpression.object)) {
         name = "this" + name
     }
 
@@ -90,11 +102,42 @@ export function printScope(scope, node) {
 
 export function getScopeDescription(node) {
     if (isProgam(node)) {
-       return 'global scope (line: ' + node.loc.start.line + ')' ;
+        return 'global scope (line: ' + node.loc.start.line + ')';
     } else if (node.id && node.id.name) {
-        return 'function scope ' + node.id.name + '  (line: ' + node.loc.start.line + ')' ;
+        return 'function scope ' + node.id.name + '  (line: ' + node.loc.start.line + ')';
     } else {
-        return 'anonymous function scope  (line: ' + node.loc.start.line + ')' ;
+        return 'anonymous function scope  (line: ' + node.loc.start.line + ')';
     }
 }
 
+export function isCatchArgument(identifierName, node) {
+
+    console.log('checking isCatchArgument for node', identifierName, node);
+
+    let res = false;
+
+    if (node) {
+        let parent = node.parent;
+        let processed = new WeakMap();
+        while (parent != null) {
+            if(processed.has(parent)){
+                console.log('got circular reference');
+                break;
+            }
+            if (parent.type == 'CatchClause') {
+                if(parent.param && parent.param.name === identifierName){
+                    console.log('got catch and param', parent.param.name);
+                    res = true;
+                    break;
+                } else {
+                    console.log('got catch but no param');
+                }
+            }
+            processed.set(parent, true);
+            parent = node.parent;
+        }
+    }
+
+    return res;
+
+}

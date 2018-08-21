@@ -9,6 +9,7 @@ export interface ILeakType {
     name: string,
     description: string,
     location: SourceLocation;
+    node: Node
 }
 
 export interface IScopeLeak {
@@ -27,6 +28,7 @@ export interface ILeakInformation {
 
 function doesScopeHasLeaks(scopeInfo: ILeakInformation) {
     return scopeInfo.leaksTypes.globalDefinitions.length > 0
+        || scopeInfo.leaksTypes.globalUses.length > 0
         || scopeInfo.leaksTypes.memberAssigns.length > 0
         || scopeInfo.leaksTypes.literalAssigns.length > 0;
 }
@@ -44,6 +46,8 @@ export class GlobalVariablesStrategy implements IStrategy {
 
         traverse(ast, {
             enter: (node, parent) => {
+
+                node["parent"] = parent;
 
                 if (utils.shouldCreatesNewScope(node)) {
                     scopeChain.push([]);
@@ -71,12 +75,12 @@ export class GlobalVariablesStrategy implements IStrategy {
                         currentScope.push(params[i].name);
                     }
 
-                    if (node.id && node.id.type === "Identifier" && node.id.name) {
+                    if (node.id && utils.isIdentifier(node.id) && node.id.name) {
                         currentScope.push(node.id.name);
                         let previousScope = (scopeChain.length - 2) >= 0 ? scopeChain[scopeChain.length - 2] : null;
                         if (previousScope) {
                             previousScope.push(node.id.name);
-                        } 
+                        }
                     }
 
                 }
@@ -88,6 +92,7 @@ export class GlobalVariablesStrategy implements IStrategy {
 
             },
             leave: (node, parent) => {
+
 
                 if (utils.shouldCreatesNewScope(node)) {
 
@@ -115,8 +120,8 @@ export class GlobalVariablesStrategy implements IStrategy {
 
                     let usesScope = usesChain.pop();
                     if (usesScope.length > 0) {
-                        usesScope.forEach(s => {
-                            if (!utils.isVarDefined(s.name, scopeChain)) {
+                        usesScope.forEach((s: ILeakType) => {
+                            if (/*!utils.isCatchArgument(s.name, s.node) &&*/ !utils.isVarDefined(s.name, scopeChain)) {
                                 leaksTypes.globalUses.push(s);
                             }
                         });
@@ -144,7 +149,7 @@ export class GlobalVariablesStrategy implements IStrategy {
 
             let varname = variable.id.name;
             let description = '(declared global variable) ' + varname;
-            let leakType: ILeakType = { name: varname, description: description, location: variable.loc };
+            let leakType: ILeakType = { name: varname, description: description, location: variable.loc, node: variable };
 
             globals.push(leakType);
         }
@@ -168,8 +173,10 @@ export class GlobalVariablesStrategy implements IStrategy {
         if (scopeLeak.memberAssigns.length === 0
             && scopeLeak.literalAssigns.length === 0
             && scopeLeak.globalDefinitions.length === 0
-            && scopeLeak.globalUses.length === 0)
+            && scopeLeak.globalUses.length === 0) {
+            console.log('scopeLeak.globalUses.length === 0 ? ', (scopeLeak.globalUses.length === 0));
             return;
+        }
 
         // console.log(''.padStart(20, '-') + utils.getScopeDescription(node) + ''.padStart(20, '-'));
 
@@ -233,7 +240,7 @@ export class GlobalVariablesStrategy implements IStrategy {
                     if (!utils.isVarDefined(firstObject, scopeChain) /*&& !utils.isFunctionDefined(firstObject, scopeChain)*/) {
                         description = '(member assign) ' + varname;
 
-                        let leakType: ILeakType = { name: varname, description: description, location: assignment.loc };
+                        let leakType: ILeakType = { name: varname, description: description, location: assignment.loc, node: assignment };
                         leakTypes.memberAssigns.push(leakType);
                     }
                 }
@@ -243,7 +250,7 @@ export class GlobalVariablesStrategy implements IStrategy {
                     if (!utils.isVarDefined(varname, scopeChain)) {
                         description = '(literal assign) ' + varname;
 
-                        let leakType: ILeakType = { name: varname, description: description, location: assignment.loc };
+                        let leakType: ILeakType = { name: varname, description: description, location: assignment.loc, node: assignment };
                         leakTypes.literalAssigns.push(leakType);
                     }
                 }
@@ -258,42 +265,46 @@ export class GlobalVariablesStrategy implements IStrategy {
 
         let uses: ILeakType[] = [];
 
-        if (node.type === "BinaryExpression") {
-            if (node.left.type == "Identifier") {
+        if (utils.isBinaryExpression(node)) {
 
-                let varname = node.left.name;
+            if (utils.isIdentifier(node["left"])) {
+
+                let varname = node["left"].name;
                 let description = '(global use) ' + varname;
-                let leakType: ILeakType = { name: varname, description: description, location: node.left.loc };
+                let leakType: ILeakType = { name: varname, description: description, location: node["left"].loc, node: node["left"] };
                 uses.push(leakType);
 
-            } else if (node.right.type == "Identifier") {
+            } else if (utils.isIdentifier(node["right"])) {
 
-                let varname = node.right.name;
+                let varname = node["right"].name;
                 let description = '(global use) ' + varname;
-                let leakType: ILeakType = { name: varname, description: description, location: node.right.loc };
+                let leakType: ILeakType = { name: varname, description: description, location: node["right"].loc, node: node["right"] };
                 uses.push(leakType);
 
-            } else if (node.left.type == "BinaryExpression") {
+            } else if (utils.isBinaryExpression(node["left"])) {
 
-                uses = uses.concat(this.getGlobalUsesInNode(node.left));
+                uses = uses.concat(this.getGlobalUsesInNode(node["left"]));
 
-            } else if (node.right.type == "BinaryExpression") {
+            } else if (utils.isBinaryExpression(node["right"])) {
 
-                uses = uses.concat(this.getGlobalUsesInNode(node.right));
+                uses = uses.concat(this.getGlobalUsesInNode(node["right"]));
 
             }
-        } else if (node.type === "CallExpression") {
-            node.arguments.forEach(a => {
-                if (a.type === "Identifier") {
+
+        } else if (utils.isCallExpression(node)) {
+
+            node["arguments"].forEach(a => {
+                if (utils.isIdentifier(a)) {
                     let varname = a.name;
                     let description = '(global use) ' + varname;
-                    let leakType: ILeakType = { name: varname, description: description, location: a.loc };
+                    let leakType: ILeakType = { name: varname, description: description, location: a.loc, node: a };
                     uses.push(leakType);
                 }
             });
+
         }
 
-        return uses.filter(u => ["__file__", "Math", "Object", "Array"].indexOf(u.name) === -1);
+        return uses.filter(u => ["__file__", "Math", "Object", "Array", "JSON"].indexOf(u.name) === -1);
     }
 
 }
