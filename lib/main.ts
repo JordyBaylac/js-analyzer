@@ -4,9 +4,7 @@ import { GlobalVariablesStrategy } from './analysis/strategies/global_variables/
 
 
 function printHeader(filePath) {
-    // console.log(''.padStart(filePath.length + 27, '*'));
     console.log('******* Processing ' + filePath + ' *******');
-    // console.log(''.padStart(filePath.length + 27, '*'));
 }
 
 
@@ -19,8 +17,6 @@ async function main(factory: AnalyzerFactory) {
 
         let analyzer = factory.createAnalyzer(filePath, [new GlobalVariablesStrategy()]);
         await analyzer.run();
-
-        // console.log(JSON.stringify(analyzer.getStats()));
 
     }
     else {
