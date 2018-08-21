@@ -231,7 +231,7 @@ export class GlobalVariablesStrategy implements IStrategy {
                         && varname.indexOf('Array.') == -1
                         && varname.indexOf('Math.') == -1
                         && varname.indexOf('JSON.') == -1) {
-                            
+
                     let firstObject = varname.split('.')[0];
                     if (!utils.isVarDefined(firstObject, scopeChain) /*&& !utils.isFunctionDefined(firstObject, scopeChain)*/) {
                         description = '(member assign) ' + varname;

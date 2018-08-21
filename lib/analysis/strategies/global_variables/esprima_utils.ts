@@ -65,6 +65,10 @@ export function compoundMemberName(memberExpression) {
         name += '.' + memberExpression.property.name;
     }
 
+    if(isThisExpression(memberExpression.object)){
+        name = "this" + name
+    }
+
     return name;
 }
 
