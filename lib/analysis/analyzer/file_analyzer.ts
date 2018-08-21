@@ -14,6 +14,9 @@ export class FileAnalyzer {
     async run() {
         if (this.fileToProcess) {
             console.log('Applying '+ (JSON.stringify(this.strategies)) +' strategies over file ', this.fileToProcess);
+            for(var strategy of this.strategies){
+                strategy.process(esprimaProgram);
+            }
         }
         else
             console.log('I do not have a file to analyze');
