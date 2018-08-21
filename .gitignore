@@ -1,0 +1,18 @@
+build/
+node_modules
+dist
+
+Thumbs.db
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# visual studio
+*.pch

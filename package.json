@@ -1,0 +1,22 @@
+{
+  "name": "dir-traverse",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "ts-node ./lib/main.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/esprima": "^4.0.2",
+    "@types/node": "^10.7.1",
+    "esprima": "^4.0.1",
+    "estraverse": "^4.2.0",
+    "klaw": "^3.0.0",
+    "through2": "^2.0.3",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.0.1"
+  }
+}
