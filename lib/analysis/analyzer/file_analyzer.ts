@@ -19,6 +19,7 @@ export class FileAnalyzer {
 
     async run() {
         if (this.fileToProcess) {
+            console.log('\n*************************************************************************************');
             console.log('Applying ' + (this.getStrategiesDescription()) + ' strategies over file ', this.fileToProcess);
             let program = fs.readFileSync(this.fileToProcess, 'utf8');
             program = program.replace(/#include\s+\"(.*)\"/g, '_include ("asd")');
