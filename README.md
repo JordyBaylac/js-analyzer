@@ -12,3 +12,8 @@ JavaScript utility to analyze source files or directories.
     npm install
     npm start "C:/svnhead/JavascriptProject/src" > globals_catch.txt
 ```
+
+## References
+
+- http://tobyho.com/2013/12/02/fun-with-esprima/
+- https://github.com/jaz303/find-globals

@@ -74,12 +74,9 @@ export class GlobalVariablesStrategy implements IStrategy {
                     if (node.id && node.id.type === "Identifier" && node.id.name) {
                         currentScope.push(node.id.name);
                         let previousScope = (scopeChain.length - 2) >= 0 ? scopeChain[scopeChain.length - 2] : null;
-                        if(previousScope) {
-                            // console.log('previous scope', previousScope);
+                        if (previousScope) {
                             previousScope.push(node.id.name);
-                        } else {
-                            // console.log('no prvious scope for ' + node.id.name);
-                        }
+                        } 
                     }
 
                 }
@@ -107,7 +104,7 @@ export class GlobalVariablesStrategy implements IStrategy {
                     leaksTypes.literalAssigns = memberAndLiteralLeaks.literalAssigns;
 
                     assignments = [];
-                    
+
 
                     let variableScope = variablesChain.pop();
 
@@ -225,12 +222,12 @@ export class GlobalVariablesStrategy implements IStrategy {
 
             if (utils.isMemberExpression(assignment.left) && !utils.isThisExpression(assignment.left.object)) {
                 varname = utils.compoundMemberName(assignment.left);
-                if (varname.indexOf('.prototype') == -1 
-                        && varname.indexOf('this.') == -1 
-                        && varname.indexOf('Object.') == -1
-                        && varname.indexOf('Array.') == -1
-                        && varname.indexOf('Math.') == -1
-                        && varname.indexOf('JSON.') == -1) {
+                if (varname.indexOf('.prototype') == -1
+                    && varname.indexOf('this.') == -1
+                    && varname.indexOf('Object.') == -1
+                    && varname.indexOf('Array.') == -1
+                    && varname.indexOf('Math.') == -1
+                    && varname.indexOf('JSON.') == -1) {
 
                     let firstObject = varname.split('.')[0];
                     if (!utils.isVarDefined(firstObject, scopeChain) /*&& !utils.isFunctionDefined(firstObject, scopeChain)*/) {
@@ -241,15 +238,15 @@ export class GlobalVariablesStrategy implements IStrategy {
                     }
                 }
             } else
-            if (!utils.isMemberExpression(assignment.left)) {
-                varname = assignment.left.name;
-                if (!utils.isVarDefined(varname, scopeChain)) {
-                    description = '(literal assign) ' + varname;
+                if (!utils.isMemberExpression(assignment.left)) {
+                    varname = assignment.left.name;
+                    if (!utils.isVarDefined(varname, scopeChain)) {
+                        description = '(literal assign) ' + varname;
 
-                    let leakType: ILeakType = { name: varname, description: description, location: assignment.loc };
-                    leakTypes.literalAssigns.push(leakType);
+                        let leakType: ILeakType = { name: varname, description: description, location: assignment.loc };
+                        leakTypes.literalAssigns.push(leakType);
+                    }
                 }
-            }
 
         }
 
@@ -296,7 +293,7 @@ export class GlobalVariablesStrategy implements IStrategy {
             });
         }
 
-        return uses.filter(u => ["__file__", "Math", "Object","Array"].indexOf(u.name) === -1);
+        return uses.filter(u => ["__file__", "Math", "Object", "Array"].indexOf(u.name) === -1);
     }
 
 }

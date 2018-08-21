@@ -55,10 +55,6 @@ export class DirectoryAnalyzer {
             await fileAnalyzer.run();
             let fileStats = fileAnalyzer.getStats();
             this.stats = { ...fileStats, ...this.stats };
-            // for (var key in fileStats) {
-            //     if (!this.stats[key]) 
-            //         this.stats[key] = fileStats[key];
-            // }
         }
     }
 
