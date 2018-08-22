@@ -10,7 +10,7 @@ JavaScript utility to analyze source files or directories.
 
 ```
     npm install
-    npm start "C:/svnhead/JavascriptProject/src" > globals_catch.txt
+    npm start "C:/svnhead/JavascriptProject/src" > globals_catch.yml
 ```
 
 ## References

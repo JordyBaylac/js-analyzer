@@ -115,11 +115,11 @@ export function printScope(scope, node) {
 
 export function getScopeDescription(node) {
     if (isProgam(node)) {
-        return 'global scope (line: ' + node.loc.start.line + ')';
+        return 'global scope (line ' + node.loc.start.line + ')';
     } else if (node.id && node.id.name) {
-        return 'function scope ' + node.id.name + '  (line: ' + node.loc.start.line + ')';
+        return 'function scope ' + node.id.name + '  (line ' + node.loc.start.line + ')';
     } else {
-        return 'anonymous function scope  (line: ' + node.loc.start.line + ')';
+        return 'anonymous function scope  (line ' + node.loc.start.line + ')';
     }
 }
 

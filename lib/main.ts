@@ -5,7 +5,7 @@ import { ReportFactory, ReportMode } from './analysis/reports/report_factory';
 
 
 function printHeader(filePath) {
-    console.log('******* Processing ' + filePath + ' *******');
+    console.log('# ******* Processing ' + filePath + ' *******');
 }
 
 

@@ -9,7 +9,7 @@ import { ILeakInformation, doesScopeHasLeaks, IScopeLeak } from '../strategies/g
 export class ConsoleReporter {
 
     private analysisResult: IDirectoryAnalysis | IFileAnalysis;
-    private indentationLevel: number = 3;
+    private indentationLevel: number = 1;
 
     constructor(analysisResult: IDirectoryAnalysis | IFileAnalysis) {
         this.analysisResult = analysisResult
@@ -39,32 +39,30 @@ export class ConsoleReporter {
     protected getIndentation(multiplier: number = 1) {
         let spaces = '';
         for (let i = 0; i < this.indentationLevel * multiplier; i++) {
-            spaces += ' ';
+            spaces += '  ';
         }
         return spaces;
     }
 
     protected reportDirectory(directoryAnalysis: IDirectoryAnalysis) {
-        console.log('> Reporting analysis over directory', directoryAnalysis.dirPath);
+        console.log('Reporting analysis over directory', directoryAnalysis.dirPath, ':');
         for (let fileAnalysis of directoryAnalysis.filesResults) {
             this.reportFile(fileAnalysis);
         }
-        console.log('< END analysis over directory', directoryAnalysis.dirPath);
     }
 
     protected reportFile(fileAnalysis: IFileAnalysis) {
         if (this.indentationLevel > 1)
             console.log();
-        console.log(this.getIndentation(), '> Reporting analysis over file', fileAnalysis.filePath);
+        console.log(this.getIndentation(), 'Reporting analysis over file', fileAnalysis.filePath, ':');
         for (let strategyResult of fileAnalysis.strategiesResults) {
             this.reportStrategy(strategyResult);
         }
-        console.log(this.getIndentation(), '< END analysis over file', fileAnalysis.filePath);
     }
 
     protected reportStrategy(strategyResult: IStrategyResult) {
         console.log();
-        console.log(this.getIndentation(2), '> Reporting strategy', StrategiesTypes[strategyResult.type].toString());
+        console.log(this.getIndentation(2), '- Reporting strategy', StrategiesTypes[strategyResult.type].toString(), ':');
 
         if (strategyResult.type === StrategiesTypes.GlobalVariablesStrategy) {
             let results = <ILeakInformation[]>strategyResult.result;
@@ -79,7 +77,7 @@ export class ConsoleReporter {
         for (let leak of leaksInfo) {
             if (doesScopeHasLeaks(leak)) {
                 console.log();
-                console.log(this.getIndentation(3), '---------- ' + leak.scopeDescription + '  ----------');
+                console.log(this.getIndentation(3), '- ' + leak.scopeDescription + ':');
                 this.analyzeLeak(leak);
             }
         }
@@ -97,33 +95,33 @@ export class ConsoleReporter {
         }
 
         if (scopeLeak.memberAssigns.length > 0) {
-            console.log(this.getIndentation(4), '> Possible Global member assign leaks : ' + scopeLeak.memberAssigns.length);
+            console.log(this.getIndentation(4), '- Possible Global member assign leaks (' + scopeLeak.memberAssigns.length + ')', ':');
             for (let memberLeak of scopeLeak.memberAssigns) {
-                console.log(this.getIndentation(5), '--' + memberLeak.name + '--', 'on line', memberLeak.location.start.line, 'col', memberLeak.location.start.column);
+                console.log(this.getIndentation(5), '-', memberLeak.name, 'on line', memberLeak.location.start.line, 'col', memberLeak.location.start.column);
             }
             console.log();
         }
 
         if (scopeLeak.literalAssigns.length > 0) {
-            console.log(this.getIndentation(4), '> Possible Global literal assign leaks : ' + scopeLeak.literalAssigns.length);
+            console.log(this.getIndentation(4), '- Possible Global literal assign leaks (' + scopeLeak.literalAssigns.length + ')', ':');
             for (let literalLeak of scopeLeak.literalAssigns) {
-                console.log(this.getIndentation(5), '--' + literalLeak.name + '--', 'on line', literalLeak.location.start.line, 'col', literalLeak.location.start.column);
+                console.log(this.getIndentation(5), '-', literalLeak.name, 'on line', literalLeak.location.start.line, 'col', literalLeak.location.start.column);
             }
             console.log();
         }
 
         if (scopeLeak.globalDefinitions && scopeLeak.globalDefinitions.length > 0) {
-            console.log(this.getIndentation(4), '> Possible Global definitions leaks : ' + scopeLeak.globalDefinitions.length);
+            console.log(this.getIndentation(4), '- Possible Global definitions leaks (' + scopeLeak.globalDefinitions.length + ')', ':');
             for (let globalDefinition of scopeLeak.globalDefinitions) {
-                console.log(this.getIndentation(5), '--' + globalDefinition.name + '--', 'on line', globalDefinition.location.start.line, 'col', globalDefinition.location.start.column);
+                console.log(this.getIndentation(5), '-', globalDefinition.name, 'on line', globalDefinition.location.start.line, 'col', globalDefinition.location.start.column);
             }
             console.log();
         }
 
         if (scopeLeak.globalUses && scopeLeak.globalUses.length > 0) {
-            console.log(this.getIndentation(4), '> Possible Global uses leaks : ' + scopeLeak.globalUses.length);
+            console.log(this.getIndentation(4), '- Possible Global uses leaks (' + scopeLeak.globalUses.length + ')', ':');
             for (let globalUse of scopeLeak.globalUses) {
-                console.log(this.getIndentation(5), '--' + globalUse.name + '--', 'on line', globalUse.location.start.line, 'col', globalUse.location.start.column);
+                console.log(this.getIndentation(5), '-', globalUse.name, 'on line', globalUse.location.start.line, 'col', globalUse.location.start.column);
             }
             console.log();
         }
