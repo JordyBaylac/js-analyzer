@@ -49,6 +49,10 @@ export function isBinaryExpression(node) {
     return node.type === "BinaryExpression";
 }
 
+export function isCatchClause(node) {
+    return node.type === "CatchClause";
+}
+
 export function isVarDefined(varName, scopeChain) {
     for (var i = 0; i < scopeChain.length; i++) {
         var scope = scopeChain[i];
@@ -59,6 +63,15 @@ export function isVarDefined(varName, scopeChain) {
     return false;
 }
 
+export function isCatchArgument(identifierName, catchsChain) {
+    for (var i = 0; i < catchsChain.length; i++) {
+        var catchArgument = catchsChain[i];
+        if (catchArgument === identifierName) {
+            return true;
+        }
+    }
+    return false;
+}
 
 export function compoundMemberName(memberExpression) {
     var name = '';
@@ -110,34 +123,4 @@ export function getScopeDescription(node) {
     }
 }
 
-export function isCatchArgument(identifierName, node) {
 
-    console.log('checking isCatchArgument for node', identifierName, node);
-
-    let res = false;
-
-    if (node) {
-        let parent = node;
-        let processed = new WeakMap();
-        while (parent != null) {
-            if(processed.has(parent)){
-                console.log('got circular reference');
-                break;
-            }
-            if (parent.type == 'CatchClause') {
-                if(parent.param && parent.param.name === identifierName){
-                    console.log('got catch and param', parent.param.name);
-                    res = true;
-                    break;
-                } else {
-                    console.log('got catch but no param');
-                }
-            }
-            processed.set(parent, true);
-            parent = node.parent;
-        }
-    }
-
-    return res;
-
-}

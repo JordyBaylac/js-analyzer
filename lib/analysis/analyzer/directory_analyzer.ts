@@ -48,21 +48,20 @@ export class DirectoryAnalyzer {
             console.log('I do not have a directory to analyze');
     }
 
-    async analyzeFiles(filesToProcess) {
-        // console.table(filesToProcess);
-        for (var file of filesToProcess) {
-            let fileAnalyzer = new FileAnalyzer(file.path, this.strategies);
-            await fileAnalyzer.run();
-            let fileStats = fileAnalyzer.getStats();
-            this.stats = { ...fileStats, ...this.stats };
-        }
-    }
-
     getStats() {
         return this.stats;
     }
 
-    getAllFiles(dirPath) {
+    protected async analyzeFiles(filesToProcess) {
+        // console.table(filesToProcess);
+        for (var filePath of filesToProcess) {
+            let fileAnalyzer = new FileAnalyzer(filePath, this.strategies);
+            await fileAnalyzer.run();
+            let fileStats = fileAnalyzer.getStats();
+        }
+    }
+
+    protected getAllFiles(dirPath) : Promise<string[]> {
 
         return new Promise((resolve, reject) => {
 
@@ -89,7 +88,7 @@ export class DirectoryAnalyzer {
                 next();
             });
 
-            const items = []; // files, directories, symlinks, etc
+            const items: string[] = []; 
 
             klaw(dirPath, { filter: excludeHiddenFilter, preserveSymlinks: true })
                 .on('error', err => excludeDirFilter.emit('error', err))
@@ -97,10 +96,11 @@ export class DirectoryAnalyzer {
                 .on('error', err => excludeNonJavascriptFilter.emit('error', err))
                 .pipe(excludeNonJavascriptFilter)
                 .on('error', err => reject(err))
-                .on('data', item => items.push(item))
+                .on('data', item => items.push(item.path))
                 .on('end', () => {
                     resolve(items);
                 });
+                
         });
 
 

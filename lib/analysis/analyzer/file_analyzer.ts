@@ -29,7 +29,7 @@ export class FileAnalyzer {
                     strategy.process(ast);
                 }
             } catch (err) {
-                console.error('Error processing file ' + this.fileToProcess);
+                console.error('Error processing file ' + this.fileToProcess, ' err = ', err);
             }
         }
         else

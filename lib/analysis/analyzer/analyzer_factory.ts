@@ -7,7 +7,7 @@ import { IStrategy } from '../strategies/i_strategy';
 
 export class AnalyzerFactory {
 
-    createAnalyzer(filePath: string, analysisStrategies: IStrategy[]) {
+    createAnalyzer(filePath: string, analysisStrategies: IStrategy[]): DirectoryAnalyzer | FileAnalyzer {
 
         if (!filePath || !analysisStrategies || analysisStrategies.length === 0) {
             throw new Error('>>> Psss!! provide a path to analyze and at least an analysis strategy');
@@ -24,7 +24,7 @@ export class AnalyzerFactory {
 
     }
 
-    getFileToProcess(filePath: string) {
+    protected getFileToProcess(filePath: string) {
         let fileToProcess = null;
         if (filePath) {
 
@@ -46,7 +46,7 @@ export class AnalyzerFactory {
         return fileToProcess;
     }
 
-    isDirectory(filePath: string) {
+    protected isDirectory(filePath: string) {
         return filePath && fs.lstatSync(filePath).isDirectory();
     }
 

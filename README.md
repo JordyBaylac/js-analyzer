@@ -17,3 +17,4 @@ JavaScript utility to analyze source files or directories.
 
 - http://tobyho.com/2013/12/02/fun-with-esprima/
 - https://github.com/jaz303/find-globals
+- https://github.com/jprichardson/node-klaw

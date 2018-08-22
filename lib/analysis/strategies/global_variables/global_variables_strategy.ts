@@ -9,7 +9,6 @@ export interface ILeakType {
     name: string,
     description: string,
     location: SourceLocation;
-    node: Node
 }
 
 export interface IScopeLeak {
@@ -42,22 +41,23 @@ export class GlobalVariablesStrategy implements IStrategy {
         let variablesChain = [];
         let scopeChain = [];
         let usesChain = [];
-        let assignments = [];
+        let assignmentsChain = [];
+        let catchsChain = [];
 
         traverse(ast, {
             enter: (node, parent) => {
-
-                node["parent"] = parent;
 
                 if (utils.shouldCreatesNewScope(node)) {
                     scopeChain.push([]);
                     variablesChain.push([]);
                     usesChain.push([]);
+                    assignmentsChain.push([]);
                 }
 
                 let currentScope = scopeChain[scopeChain.length - 1];
                 let variableScope = variablesChain[variablesChain.length - 1];
-                var usesInScope = usesChain[usesChain.length - 1];
+                let usesInScope = usesChain[usesChain.length - 1];
+                let assignemtsInScope = assignmentsChain[assignmentsChain.length - 1];
 
                 if (utils.isVariableDeclarator(node)) {
 
@@ -66,7 +66,7 @@ export class GlobalVariablesStrategy implements IStrategy {
 
                 } else if (utils.isAssignmentExpression(node)) {
 
-                    assignments.push(node);
+                    assignemtsInScope.push(node);
 
                 } else if (utils.isFunctionDeclaration(node) || utils.isFunctionExpression(node)) {
 
@@ -83,6 +83,8 @@ export class GlobalVariablesStrategy implements IStrategy {
                         }
                     }
 
+                } else if (utils.isCatchClause(node) && utils.isIdentifier(node.param)) {
+                    catchsChain.push(node.param.name);
                 }
 
                 let scopeUses = this.getGlobalUsesInNode(node);
@@ -103,37 +105,45 @@ export class GlobalVariablesStrategy implements IStrategy {
                         literalAssigns: []
                     };
 
+                    let assigmentsInScope = assignmentsChain.pop();
 
-                    let memberAndLiteralLeaks = this.checkForMemberAndLiteralLeaks(assignments, scopeChain);
+                    let memberAndLiteralLeaks = this.checkForMemberAndLiteralLeaks(assigmentsInScope, scopeChain);
                     leaksTypes.memberAssigns = memberAndLiteralLeaks.memberAssigns;
-                    leaksTypes.literalAssigns = memberAndLiteralLeaks.literalAssigns;
-
-                    assignments = [];
+                    leaksTypes.literalAssigns = memberAndLiteralLeaks.literalAssigns.filter(a => !utils.isCatchArgument(a.name, catchsChain));
 
 
                     let variableScope = variablesChain.pop();
 
                     if (node && utils.isProgam(node)) {
-                        let globals = this.checkGlobalVariableDefinition(variableScope);
+                        let globals = this.getGlobalVariablesDefinition(variableScope);
                         leaksTypes.globalDefinitions = globals;
                     }
 
                     let usesScope = usesChain.pop();
-                    if (usesScope.length > 0) {
-                        usesScope.forEach((s: ILeakType) => {
-                            if (/*!utils.isCatchArgument(s.name, s.node) &&*/ !utils.isVarDefined(s.name, scopeChain)) {
+                    usesScope.filter((u: ILeakType) => !utils.isCatchArgument(u.name, catchsChain))
+                        .forEach((s: ILeakType) => {
+                            if (!utils.isVarDefined(s.name, scopeChain)) {
                                 leaksTypes.globalUses.push(s);
                             }
                         });
-                    }
 
                     scopeChain.pop();
-                    // utils.printScope(currentScope, node);
 
                     leaks.push({
                         scopeDescription: utils.getScopeDescription(node),
                         leaksTypes: leaksTypes
                     });
+
+                } else if (utils.isCatchClause(node) && utils.isIdentifier(node.param)) {
+
+                    for (let i = 0; i < usesChain.length; i++) {
+                        let usesScope = usesChain[i];
+                        let withouthUsesOfCatchArguments = usesScope.filter((s: ILeakType) => !utils.isCatchArgument(s.name, catchsChain));
+                        usesChain[i] = withouthUsesOfCatchArguments;
+                    }
+
+                    catchsChain.pop();
+
                 }
             }
         });
@@ -143,20 +153,9 @@ export class GlobalVariablesStrategy implements IStrategy {
     }
 
 
-    checkGlobalVariableDefinition(variableScope) {
-        let globals = [];
-        for (let variable of variableScope) {
 
-            let varname = variable.id.name;
-            let description = '(declared global variable) ' + varname;
-            let leakType: ILeakType = { name: varname, description: description, location: variable.loc, node: variable };
 
-            globals.push(leakType);
-        }
-        return globals;
-    }
-
-    analyzeLeaks(leaksInfo: ILeakInformation[]) {
+    protected analyzeLeaks(leaksInfo: ILeakInformation[]) {
 
         for (let leak of leaksInfo) {
             if (doesScopeHasLeaks(leak)) {
@@ -166,7 +165,7 @@ export class GlobalVariablesStrategy implements IStrategy {
         }
     }
 
-    analyzeLeak(leakInfo: ILeakInformation) {
+    protected analyzeLeak(leakInfo: ILeakInformation) {
 
         let scopeLeak: IScopeLeak = leakInfo.leaksTypes;
 
@@ -211,7 +210,7 @@ export class GlobalVariablesStrategy implements IStrategy {
         console.log();
     }
 
-    checkForMemberAndLiteralLeaks(assignments, scopeChain): IScopeLeak {
+    protected checkForMemberAndLiteralLeaks(assignments, scopeChain): IScopeLeak {
 
         let leakTypes: IScopeLeak = {
             globalDefinitions: [],
@@ -237,10 +236,10 @@ export class GlobalVariablesStrategy implements IStrategy {
                     && varname.indexOf('JSON.') == -1) {
 
                     let firstObject = varname.split('.')[0];
-                    if (!utils.isVarDefined(firstObject, scopeChain) /*&& !utils.isFunctionDefined(firstObject, scopeChain)*/) {
+                    if (!utils.isVarDefined(firstObject, scopeChain)) {
                         description = '(member assign) ' + varname;
 
-                        let leakType: ILeakType = { name: varname, description: description, location: assignment.loc, node: assignment };
+                        let leakType: ILeakType = { name: varname, description: description, location: Object.create(assignment.loc) };
                         leakTypes.memberAssigns.push(leakType);
                     }
                 }
@@ -250,7 +249,7 @@ export class GlobalVariablesStrategy implements IStrategy {
                     if (!utils.isVarDefined(varname, scopeChain)) {
                         description = '(literal assign) ' + varname;
 
-                        let leakType: ILeakType = { name: varname, description: description, location: assignment.loc, node: assignment };
+                        let leakType: ILeakType = { name: varname, description: description, location: Object.create(assignment.loc) };
                         leakTypes.literalAssigns.push(leakType);
                     }
                 }
@@ -261,7 +260,20 @@ export class GlobalVariablesStrategy implements IStrategy {
         return leakTypes;
     }
 
-    getGlobalUsesInNode(node: Node): ILeakType[] {
+    protected getGlobalVariablesDefinition(variableScope: Node[]): ILeakType[] {
+        let globals: ILeakType[] = [];
+        for (let variable of variableScope) {
+
+            let varname = variable["id"].name;
+            let description = '(declared global variable) ' + varname;
+            let leakType: ILeakType = { name: varname, description: description, location: Object.create(variable.loc) };
+
+            globals.push(leakType);
+        }
+        return globals;
+    }
+
+    protected getGlobalUsesInNode(node: Node): ILeakType[] {
 
         let uses: ILeakType[] = [];
 
@@ -271,14 +283,14 @@ export class GlobalVariablesStrategy implements IStrategy {
                 node["left"]["parent"] = node;
                 let varname = node["left"].name;
                 let description = '(global use) ' + varname;
-                let leakType: ILeakType = { name: varname, description: description, location: node["left"].loc, node: node["left"] };
+                let leakType: ILeakType = { name: varname, description: description, location: Object.create(node["left"].loc) };
                 uses.push(leakType);
 
             } else if (utils.isIdentifier(node["right"])) {
                 node["right"]["parent"] = node;
                 let varname = node["right"].name;
                 let description = '(global use) ' + varname;
-                let leakType: ILeakType = { name: varname, description: description, location: node["right"].loc, node: node["right"] };
+                let leakType: ILeakType = { name: varname, description: description, location: Object.create(node["right"].loc) };
                 uses.push(leakType);
 
             } else if (utils.isBinaryExpression(node["left"])) {
@@ -298,7 +310,7 @@ export class GlobalVariablesStrategy implements IStrategy {
                     let varname = a.name;
                     let description = '(global use) ' + varname;
                     a["parent"] = node;
-                    let leakType: ILeakType = { name: varname, description: description, location: a.loc, node: a };
+                    let leakType: ILeakType = { name: varname, description: description, location: Object.create(a.loc) };
                     uses.push(leakType);
                 }
             });

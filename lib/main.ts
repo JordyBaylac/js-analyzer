@@ -20,14 +20,11 @@ async function main(factory: AnalyzerFactory) {
 
     }
     else {
-        throw new Error('>>> Psss!! you need to specify a directory to parse');
+        throw new Error('>>> Psss!! you need to specify a directory to analyze');
     }
 }
 
-/**
- * check    https://github.com/jprichardson/node-klaw
- *  and     https://ourcodeworld.com/articles/read/420/how-to-read-recursively-a-directory-in-node-js
- */
+
 main(new AnalyzerFactory())
     .catch(error => {
         console.error('got error', error);
