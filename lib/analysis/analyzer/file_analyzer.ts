@@ -1,7 +1,6 @@
 import { IStrategy, IStrategyResult } from '../strategies/i_strategy';
 import * as esprima from 'esprima';
 import * as fs from 'fs';
-import * as path from 'path';
 
 export interface IFileAnalysis {
     filePath: string,

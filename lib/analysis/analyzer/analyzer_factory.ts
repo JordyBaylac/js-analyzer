@@ -5,6 +5,13 @@ import { FileAnalyzer } from './file_analyzer'
 import { DirectoryAnalyzer } from './directory_analyzer'
 import { IStrategy } from '../strategies/i_strategy';
 
+export interface AnalysisOptions {
+    input: string,
+    output: string,
+    reportMode: string,
+    omit: string[]
+}  
+
 export class AnalyzerFactory {
 
     createAnalyzer(filePath: string, analysisStrategies: IStrategy[]): DirectoryAnalyzer | FileAnalyzer {

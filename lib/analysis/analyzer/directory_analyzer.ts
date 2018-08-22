@@ -26,10 +26,6 @@ export class DirectoryAnalyzer {
         this.analysisResult = <IDirectoryAnalysis>{ dirPath: this.dirPath, filesResults: [] };;
     }
 
-    getStrategiesDescription() {
-        return '[' + this.strategies.map(s => s.constructor.name).join(',') + ']';        
-    }
-
     async run() {
         if (this.dirPath) {
             try {

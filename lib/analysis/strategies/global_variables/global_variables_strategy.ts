@@ -236,7 +236,6 @@ export class GlobalVariablesStrategy implements IStrategy {
                         leakTypes.literalAssigns.push(leakType);
                     }
                 }
-
         }
 
 
