@@ -89,6 +89,8 @@ export class GlobalVariablesStrategy implements IStrategy {
 
                 let scopeUses = this.getGlobalUsesInNode(node);
                 if (scopeUses.length > 0) {
+                    // let result = scopeUses.filter( (u: ILeakType) => usesInScope.find((s: ILeakType)=> this.compareLeaks(u, s)) == null );
+                    // usesInScope.push(...result);
                     usesInScope.push(...scopeUses);
                 }
 
@@ -122,7 +124,7 @@ export class GlobalVariablesStrategy implements IStrategy {
                     let usesScope = usesChain.pop();
                     usesScope.filter((u: ILeakType) => !utils.isCatchArgument(u.name, catchsChain))
                         .forEach((s: ILeakType) => {
-                            if (!utils.isVarDefined(s.name, scopeChain)) {
+                            if (!utils.isVarDefined(s.name, scopeChain) && !this.isLeakDuplicate(s, leaksTypes.globalUses)) {
                                 leaksTypes.globalUses.push(s);
                             }
                         });
@@ -148,13 +150,48 @@ export class GlobalVariablesStrategy implements IStrategy {
             }
         });
 
-        return <IStrategyResult>{ 
+        return <IStrategyResult>{
             type: StrategiesTypes.GlobalVariablesStrategy,
-            result: leaks
+            result: this.removeDuplicates(leaks)
         };
 
     }
 
+    protected removeDuplicates(leaks: ILeakInformation[]): ILeakInformation[] {
+        return leaks;
+
+        // let newLeaks: ILeakInformation[] = [];
+
+        // leaks.forEach(leak => {
+
+        //     let leakTypes: IScopeLeak = {
+        //         globalDefinitions: leak.leaksTypes.globalDefinitions.filter(filterLeakType),
+        //         globalUses: leak.leaksTypes.globalUses.filter(filterLeakType),
+        //         memberAssigns: leak.leaksTypes.memberAssigns.filter(filterLeakType),
+        //         literalAssigns: leak.leaksTypes.literalAssigns.filter(filterLeakType)
+        //     };
+
+        //     newLeaks.push({scopeDescription: leak.scopeDescription, leaksTypes: leakTypes});
+        // })
+
+        // return newLeaks;
+
+        // function filterLeakType(leakType: ILeakType, index, array: ILeakType[]) {
+        //     return index === array.findIndex((t) => (
+        //         t.name === leakType.name && t.location.start === leakType.location.start && t.location.end === leakType.location.end
+        //     ));
+        // }
+
+    }
+
+
+    protected isLeakDuplicate(leakType: ILeakType, leakTypes: ILeakType[]) {
+        return leakTypes.find((t) => this.compareLeaks(t, leakType)) != null;
+    }
+
+    protected compareLeaks(leak1: ILeakType, leak2: ILeakType) {
+        return leak1.name === leak2.name && leak1.location.start === leak2.location.start && leak1.location.end === leak2.location.end;
+    }
 
     protected checkForMemberAndLiteralLeaks(assignments, scopeChain): IScopeLeak {
 
@@ -172,7 +209,7 @@ export class GlobalVariablesStrategy implements IStrategy {
             let description = '';
 
 
-            if (utils.isMemberExpression(assignment.left) && !utils.isThisExpression(assignment.left.object)) {
+            if (utils.isMemberExpression(assignment.left)) {
                 varname = utils.compoundMemberName(assignment.left);
                 if (varname.indexOf('.prototype') == -1
                     && varname.indexOf('this.') == -1
@@ -226,14 +263,12 @@ export class GlobalVariablesStrategy implements IStrategy {
         if (utils.isBinaryExpression(node)) {
 
             if (utils.isIdentifier(node["left"])) {
-                node["left"]["parent"] = node;
                 let varname = node["left"].name;
                 let description = '(global use) ' + varname;
                 let leakType: ILeakType = { name: varname, description: description, location: Object.create(node["left"].loc) };
                 uses.push(leakType);
 
             } else if (utils.isIdentifier(node["right"])) {
-                node["right"]["parent"] = node;
                 let varname = node["right"].name;
                 let description = '(global use) ' + varname;
                 let leakType: ILeakType = { name: varname, description: description, location: Object.create(node["right"].loc) };
@@ -247,6 +282,16 @@ export class GlobalVariablesStrategy implements IStrategy {
 
                 uses = uses.concat(this.getGlobalUsesInNode(node["right"]));
 
+            } else if (utils.isMemberExpression(node["left"])) {
+                
+                let leakType: ILeakType = this.getGlobalMemberUseLeakType(node["left"]);
+                uses.push(leakType);
+
+            } else if (utils.isMemberExpression(node["right"])) {
+
+                let leakType: ILeakType = this.getGlobalMemberUseLeakType(node["right"]);
+                uses.push(leakType);
+
             }
 
         } else if (utils.isCallExpression(node)) {
@@ -255,15 +300,27 @@ export class GlobalVariablesStrategy implements IStrategy {
                 if (utils.isIdentifier(a)) {
                     let varname = a.name;
                     let description = '(global use) ' + varname;
-                    a["parent"] = node;
                     let leakType: ILeakType = { name: varname, description: description, location: Object.create(a.loc) };
+                    uses.push(leakType);
+                } else if (utils.isMemberExpression(a)) {
+                    let leakType: ILeakType = this.getGlobalMemberUseLeakType(a);
                     uses.push(leakType);
                 }
             });
 
         }
 
-        return uses.filter(u => ["__file__", "Math", "Object", "Array", "JSON"].indexOf(u.name) === -1);
+        return uses.filter(u => u !== null && ["__func__", "__path__", "__file__", "Math", "Object", "Array", "JSON", "this", "xxNode", "xxNodeSet"].indexOf(u.name) === -1);
+    }
+
+    protected getGlobalMemberUseLeakType(node): ILeakType {
+        if (utils.isMemberExpression(node)) {
+            let varname = utils.compoundMemberName(node);
+            let firstObject = varname.split('.')[0];
+            let description = '(global member use) ' + varname;
+            return { name: firstObject, description: description, location: Object.create(node.loc) };
+        }
+        return null;
     }
 
 }
