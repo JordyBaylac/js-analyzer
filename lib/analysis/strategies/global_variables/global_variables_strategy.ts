@@ -1,4 +1,4 @@
-import { IStrategy } from '../i_strategy';
+import { IStrategy, IStrategyResult, IStrategySingleResult, StrategiesTypes } from '../i_strategy';
 import { Node, SourceLocation } from 'estree';
 import { Program } from 'esprima';
 import { traverse } from 'estraverse';
@@ -19,13 +19,13 @@ export interface IScopeLeak {
 }
 
 
-export interface ILeakInformation {
+export interface ILeakInformation extends IStrategySingleResult {
     scopeDescription: string,
     leaksTypes: IScopeLeak,
 }
 
 
-function doesScopeHasLeaks(scopeInfo: ILeakInformation) {
+export function doesScopeHasLeaks(scopeInfo: ILeakInformation) {
     return scopeInfo.leaksTypes.globalDefinitions.length > 0
         || scopeInfo.leaksTypes.globalUses.length > 0
         || scopeInfo.leaksTypes.memberAssigns.length > 0
@@ -34,7 +34,7 @@ function doesScopeHasLeaks(scopeInfo: ILeakInformation) {
 
 export class GlobalVariablesStrategy implements IStrategy {
 
-    process(ast: Program) {
+    process(ast: Program): IStrategyResult {
 
         let leaks: ILeakInformation[] = [];
 
@@ -148,67 +148,13 @@ export class GlobalVariablesStrategy implements IStrategy {
             }
         });
 
-        this.analyzeLeaks(leaks);
+        return <IStrategyResult>{ 
+            type: StrategiesTypes.GlobalVariablesStrategy,
+            result: leaks
+        };
 
     }
 
-
-
-
-    protected analyzeLeaks(leaksInfo: ILeakInformation[]) {
-
-        for (let leak of leaksInfo) {
-            if (doesScopeHasLeaks(leak)) {
-                console.log('---------- ' + leak.scopeDescription + '  ----------');
-                this.analyzeLeak(leak);
-            }
-        }
-    }
-
-    protected analyzeLeak(leakInfo: ILeakInformation) {
-
-        let scopeLeak: IScopeLeak = leakInfo.leaksTypes;
-
-        if (scopeLeak.memberAssigns.length === 0
-            && scopeLeak.literalAssigns.length === 0
-            && scopeLeak.globalDefinitions.length === 0
-            && scopeLeak.globalUses.length === 0) {
-            console.log('scopeLeak.globalUses.length === 0 ? ', (scopeLeak.globalUses.length === 0));
-            return;
-        }
-
-        // console.log(''.padStart(20, '-') + utils.getScopeDescription(node) + ''.padStart(20, '-'));
-
-        if (scopeLeak.memberAssigns.length > 0) {
-            console.log('    > Possible Global member assign leaks : ' + scopeLeak.memberAssigns.length);
-            for (let memberLeak of scopeLeak.memberAssigns) {
-                console.log('        --' + memberLeak.name + '--', 'on line', memberLeak.location.start.line, 'col', memberLeak.location.start.column);
-            }
-        }
-
-        if (scopeLeak.literalAssigns.length > 0) {
-            console.log('    > Possible Global literal assign leaks : ' + scopeLeak.literalAssigns.length);
-            for (let literalLeak of scopeLeak.literalAssigns) {
-                console.log('        --' + literalLeak.name + '--', 'on line', literalLeak.location.start.line, 'col', literalLeak.location.start.column);
-            }
-        }
-
-        if (scopeLeak.globalDefinitions && scopeLeak.globalDefinitions.length > 0) {
-            console.log('    > Possible Global definitions leaks : ' + scopeLeak.globalDefinitions.length);
-            for (let globalDefinition of scopeLeak.globalDefinitions) {
-                console.log('        --' + globalDefinition.name + '--', 'on line', globalDefinition.location.start.line, 'col', globalDefinition.location.start.column);
-            }
-        }
-
-        if (scopeLeak.globalUses && scopeLeak.globalUses.length > 0) {
-            console.log('    > Possible Global uses leaks : ' + scopeLeak.globalUses.length);
-            for (let globalUse of scopeLeak.globalUses) {
-                console.log('        --' + globalUse.name + '--', 'on line', globalUse.location.start.line, 'col', globalUse.location.start.column);
-            }
-        }
-
-        console.log();
-    }
 
     protected checkForMemberAndLiteralLeaks(assignments, scopeChain): IScopeLeak {
 

@@ -1,4 +1,4 @@
-import { FileAnalyzer } from "./file_analyzer";
+import { FileAnalyzer, IFileAnalysis } from "./file_analyzer";
 import { IStrategy } from '../strategies/i_strategy';
 
 const klaw = require('klaw');
@@ -8,25 +8,22 @@ const path = require('path');
 
 const JAVASCRIPT_EXTENSIONS = ['.xjs', '.js'];
 
+export interface IDirectoryAnalysis {
+    dirPath: string,
+    filesResults: IFileAnalysis[]
+}
+
 export class DirectoryAnalyzer {
 
     private dirPath: string;
     private strategies: IStrategy[];
-    private stats: {};
+    private analysisResult: IDirectoryAnalysis;
 
 
     constructor(dirPath: string, strategies: IStrategy[]) {
         this.dirPath = dirPath;
         this.strategies = strategies || [];
-
-        this.stats = {
-            globalVariables: {
-                byAssign: {
-                    cant: 1,
-                    details: [{ name: 'fareIn', line: 450 }]
-                }
-            }
-        };
+        this.analysisResult = <IDirectoryAnalysis>{ dirPath: this.dirPath, filesResults: [] };;
     }
 
     getStrategiesDescription() {
@@ -35,7 +32,6 @@ export class DirectoryAnalyzer {
 
     async run() {
         if (this.dirPath) {
-            console.log('Applying ' + (this.getStrategiesDescription()) + ' strategies over directory ', this.dirPath);
             try {
                 let files = await this.getAllFiles(this.dirPath);
                 await this.analyzeFiles(files);
@@ -45,19 +41,20 @@ export class DirectoryAnalyzer {
             };
         }
         else
-            console.log('I do not have a directory to analyze');
+            console.error('>>> Psss!! I do not have a directory to analyze');
     }
 
-    getStats() {
-        return this.stats;
+    getResult(): IDirectoryAnalysis {
+        return this.analysisResult;
     }
 
     protected async analyzeFiles(filesToProcess) {
-        // console.table(filesToProcess);
+        
         for (var filePath of filesToProcess) {
             let fileAnalyzer = new FileAnalyzer(filePath, this.strategies);
             await fileAnalyzer.run();
-            let fileStats = fileAnalyzer.getStats();
+            let fileAnalysis = fileAnalyzer.getResult();
+            this.analysisResult.filesResults.push(fileAnalysis);
         }
     }
 
@@ -100,7 +97,7 @@ export class DirectoryAnalyzer {
                 .on('end', () => {
                     resolve(items);
                 });
-                
+
         });
 
 
