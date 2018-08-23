@@ -1,5 +1,5 @@
 import * as esprima from 'esprima';
-import { GlobalVariablesStrategy, IGlobalVariablesResult, IScopeLeak } from '../../analysis/strategies/global_variables/global_variables_strategy';
+import { GlobalVariablesStrategy, IGlobalVariablesResult, IScopeLeak, doesScopeHasLeaks } from '../../analysis/strategies/global_variables/global_variables_strategy';
 import { IStrategyResult } from '../../analysis/strategies/i_strategy';
 import { expect } from 'chai'
 
@@ -11,17 +11,18 @@ describe('GlobalVariablesStrategy', function () {
 
   function _constructAst(code: string): esprima.Program {
     return esprima.parseScript(code, { loc: true });
-  }  
-
-  function _getScopeLeaks(ast): IScopeLeak[] {
-      let analysis: IStrategyResult = strategy.process(ast);
-      let result = <IGlobalVariablesResult>analysis.result;
-      return result.leaks;
   }
 
-  before(function() {
+  function _getScopeLeaks(ast): IScopeLeak[] {
+    let analysis: IStrategyResult = strategy.process(ast);
+    let result = <IGlobalVariablesResult>analysis.result;
+    return result.leaks;
+  }
+
+  before(function () {
     strategy = new GlobalVariablesStrategy();
   });
+
 
   describe('# Global literal assign of literal value', function () {
 
@@ -169,7 +170,7 @@ describe('GlobalVariablesStrategy', function () {
       /// Assert
 
       //no leaks
-      expect(scopeLeakHello.literalAssigns).to.have.length(0);
+      expect(doesScopeHasLeaks(scopeLeakHello)).to.be.false;
 
     });
 
@@ -222,11 +223,42 @@ describe('GlobalVariablesStrategy', function () {
       let scopeLeaks = _getScopeLeaks(ast);
       let scopeLeakProgram = scopeLeaks[0];
 
-      /// Assert
 
+      /// Assert
       expect(scopeLeakProgram.literalAssigns).to.have.length(2);
       expect(scopeLeakProgram.literalAssigns[0].name).to.equal("x");
       expect(scopeLeakProgram.literalAssigns[1].name).to.equal("i");
+
+    });
+
+  });
+
+
+  describe('# Global definition of variables', function () {
+
+    it('should report leakage if variables are defined in Program scope', function () {
+
+      /// Arrange
+      let ast = _constructAst(
+        `
+          var globalVariable; //is global bc is in the Program scope
+          var globalVariable2 = 456;
+        `
+      );
+
+
+      /// Act
+      let scopeLeaks = _getScopeLeaks(ast);
+      let scopeLeakProgram = scopeLeaks[0];
+
+
+      /// Assert      
+      expect(scopeLeakProgram.globalDefinitions).to.have.length(2);
+
+      let leak1 = scopeLeakProgram.globalDefinitions[0];
+      let leak2 = scopeLeakProgram.globalDefinitions[1];
+      expect(leak1.name).to.equal("globalVariable");
+      expect(leak2.name).to.equal("globalVariable2");
 
     });
 
