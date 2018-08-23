@@ -130,7 +130,7 @@ export class GlobalVariablesStrategy implements IStrategy {
 
                     scopeChain.pop();
 
-                    leaks.push(scopeLeak);
+                    leaks.unshift(scopeLeak);
 
                 } else if (utils.isCatchClause(node) && utils.isIdentifier(node.param)) {
 
