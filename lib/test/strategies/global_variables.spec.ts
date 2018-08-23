@@ -215,6 +215,11 @@ describe('GlobalVariablesStrategy', function () {
           for(i=0; i<34; i++){
           }
 
+          function f() {
+
+          }
+
+          f(a = 45);
         `
       );
 
@@ -225,9 +230,10 @@ describe('GlobalVariablesStrategy', function () {
 
 
       /// Assert
-      expect(scopeLeakProgram.literalAssigns).to.have.length(2);
+      expect(scopeLeakProgram.literalAssigns).to.have.length(3);
       expect(scopeLeakProgram.literalAssigns[0].name).to.equal("x");
       expect(scopeLeakProgram.literalAssigns[1].name).to.equal("i");
+      expect(scopeLeakProgram.literalAssigns[2].name).to.equal("a");
 
     });
 
@@ -259,6 +265,30 @@ describe('GlobalVariablesStrategy', function () {
       let leak2 = scopeLeakProgram.globalDefinitions[1];
       expect(leak1.name).to.equal("globalVariable");
       expect(leak2.name).to.equal("globalVariable2");
+
+    });
+
+    it('should not report leakage if variables are defined inside another scope', function () {
+
+      /// Arrange
+      let ast = _constructAst(
+        `
+          function func(){
+            var globalVariable; //is global bc is in the Program scope
+            var globalVariable2 = 456;
+          }          
+        `
+      );
+
+
+      /// Act
+      let scopeLeaks = _getScopeLeaks(ast);
+      let scopeLeakProgram = scopeLeaks[0];
+
+
+      /// Assert      
+      expect(scopeLeakProgram.globalDefinitions).to.have.length(0);
+      expect(doesScopeHasLeaks(scopeLeakProgram)).to.be.false;
 
     });
 
