@@ -25,7 +25,7 @@ describe('GlobalVariablesStrategy', function () {
 
   describe('# Global literal assign of literal value', function () {
 
-    it('should report 1 leak in the program scope', function () {
+    it('should report 1 leak on the program scope', function () {
 
       /// Arrange
       let ast = _constructAst(
@@ -50,7 +50,7 @@ describe('GlobalVariablesStrategy', function () {
 
     });
 
-    it('should report 1 leak inside a function scope', function () {
+    it('should report 1 leak on a function scope', function () {
 
       /// Arrange
       let ast = _constructAst(
@@ -73,6 +73,74 @@ describe('GlobalVariablesStrategy', function () {
 
       let literalAssign = scopeLeak.literalAssigns[0];
       expect(literalAssign.name).to.equal("leakedVariableInsideFunction");
+
+    });
+
+    it('should report 1 leak on a function scope inside another function', function () {
+
+      /// Arrange
+      let ast = _constructAst(
+        `          
+          function hello() {
+
+            function world() {
+              leakedVariableInside2ndFunction = 45;
+            }
+
+          }
+        `
+      );
+
+
+      /// Act
+      let scopeLeaks = _getScopeLeaks(ast);
+      let scopeLeak = scopeLeaks[2];
+
+      /// Assert
+
+      //only one leak
+      expect(scopeLeak.literalAssigns).to.have.length(1);
+
+      let literalAssign = scopeLeak.literalAssigns[0];
+      expect(literalAssign.name).to.equal("leakedVariableInside2ndFunction");
+
+    });
+
+    it('should report 3 leaks', function () {
+
+      /// Arrange
+      let ast = _constructAst(
+        `         
+          damn_global = true;
+
+          function hello() {
+            off = "what?"
+
+            function world() {
+              leakedVariable = 45;
+            }
+
+          }
+        `
+      );
+
+
+      /// Act
+      let scopeLeaks = _getScopeLeaks(ast);
+      let scopeLeakProgram = scopeLeaks[0];
+      let scopeLeakHello = scopeLeaks[1];
+      let scopeLeakWorld = scopeLeaks[2];
+
+      /// Assert
+
+      //only thre leak
+      expect(scopeLeakProgram.literalAssigns).to.have.length(1);
+      expect(scopeLeakHello.literalAssigns).to.have.length(1);
+      expect(scopeLeakWorld.literalAssigns).to.have.length(1);
+
+      expect(scopeLeakProgram.literalAssigns[0].name).to.equal("damn_global");
+      expect(scopeLeakHello.literalAssigns[0].name).to.equal("off");
+      expect(scopeLeakWorld.literalAssigns[0].name).to.equal("leakedVariable");
 
     });
 
