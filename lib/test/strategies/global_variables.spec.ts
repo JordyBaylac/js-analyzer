@@ -133,7 +133,7 @@ describe('GlobalVariablesStrategy', function () {
 
       /// Assert
 
-      //only thre leak
+      //only three leak
       expect(scopeLeakProgram.literalAssigns).to.have.length(1);
       expect(scopeLeakHello.literalAssigns).to.have.length(1);
       expect(scopeLeakWorld.literalAssigns).to.have.length(1);
@@ -141,6 +141,60 @@ describe('GlobalVariablesStrategy', function () {
       expect(scopeLeakProgram.literalAssigns[0].name).to.equal("damn_global");
       expect(scopeLeakHello.literalAssigns[0].name).to.equal("off");
       expect(scopeLeakWorld.literalAssigns[0].name).to.equal("leakedVariable");
+
+    });
+
+    it('assigns of function arguments should not be reported as globals', function () {
+
+      /// Arrange
+      let ast = _constructAst(
+        `         
+          function hello(param) {
+            param = "what?"
+          }
+
+          hello('asd');
+        `
+      );
+
+
+      /// Act
+      let scopeLeaks = _getScopeLeaks(ast);
+      let scopeLeakHello = scopeLeaks[1];
+
+      /// Assert
+
+      //no leaks
+      expect(scopeLeakHello.literalAssigns).to.have.length(0);
+
+    });
+
+    it('globals in parent scope can be shallowed by local variable in child scope', function () {
+
+      /// Arrange
+      let ast = _constructAst(
+        `   
+          param = 9;
+        
+          function hello(param) {
+            param = "what?"
+          }
+
+          hello('asd');
+        `
+      );
+
+
+      /// Act
+      let scopeLeaks = _getScopeLeaks(ast);
+      let scopeLeakProgram = scopeLeaks[0];
+      let scopeLeakHello = scopeLeaks[1];
+
+      /// Assert
+
+      //no leaks
+      expect(scopeLeakHello.literalAssigns).to.have.length(0);
+      expect(scopeLeakProgram.literalAssigns[0].name).to.equal("param");
 
     });
 
