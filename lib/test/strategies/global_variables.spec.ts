@@ -66,6 +66,7 @@ describe('GlobalVariablesStrategy', function () {
       let scopeLeaks = _getScopeLeaks(ast);
       let scopeLeak = scopeLeaks[1];
 
+
       /// Assert
 
       //only one leak
@@ -95,6 +96,7 @@ describe('GlobalVariablesStrategy', function () {
       /// Act
       let scopeLeaks = _getScopeLeaks(ast);
       let scopeLeak = scopeLeaks[2];
+
 
       /// Assert
 
@@ -131,6 +133,7 @@ describe('GlobalVariablesStrategy', function () {
       let scopeLeakHello = scopeLeaks[1];
       let scopeLeakWorld = scopeLeaks[2];
 
+
       /// Assert
 
       //only three leak
@@ -162,6 +165,7 @@ describe('GlobalVariablesStrategy', function () {
       let scopeLeaks = _getScopeLeaks(ast);
       let scopeLeakHello = scopeLeaks[1];
 
+
       /// Assert
 
       //no leaks
@@ -190,11 +194,39 @@ describe('GlobalVariablesStrategy', function () {
       let scopeLeakProgram = scopeLeaks[0];
       let scopeLeakHello = scopeLeaks[1];
 
+
       /// Assert
 
-      //no leaks
       expect(scopeLeakHello.literalAssigns).to.have.length(0);
       expect(scopeLeakProgram.literalAssigns[0].name).to.equal("param");
+
+    });
+
+    it('assigns inside expression should be reported', function () {
+
+      /// Arrange
+      let ast = _constructAst(
+        `   
+          if(x = 5) {
+            
+          }
+
+          for(i=0; i<34; i++){
+          }
+
+        `
+      );
+
+
+      /// Act
+      let scopeLeaks = _getScopeLeaks(ast);
+      let scopeLeakProgram = scopeLeaks[0];
+
+      /// Assert
+
+      expect(scopeLeakProgram.literalAssigns).to.have.length(2);
+      expect(scopeLeakProgram.literalAssigns[0].name).to.equal("x");
+      expect(scopeLeakProgram.literalAssigns[1].name).to.equal("i");
 
     });
 
