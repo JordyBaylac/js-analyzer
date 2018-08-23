@@ -2,7 +2,7 @@
 import { IFileAnalysis } from '../analyzer/file_analyzer';
 import { IDirectoryAnalysis } from '../analyzer/directory_analyzer';
 import { IStrategyResult, StrategiesTypes } from '../strategies/i_strategy';
-import { ILeakInformation, doesScopeHasLeaks, IScopeLeak } from '../strategies/global_variables/global_variables_strategy';
+import { doesScopeHasLeaks, IScopeLeak, IGlobalVariablesResult } from '../strategies/global_variables/global_variables_strategy';
 
 
 
@@ -65,16 +65,16 @@ export class ConsoleReporter {
         console.log(this.getIndentation(2), '- Reporting strategy', StrategiesTypes[strategyResult.type].toString(), ':');
 
         if (strategyResult.type === StrategiesTypes.GlobalVariablesStrategy) {
-            let results = <ILeakInformation[]>strategyResult.result;
-            this.analyzeLeaks(results);
+            let results = <IGlobalVariablesResult>strategyResult.result;
+            this.analyzeLeaks(results.leaks);
         } else {
             throw new Error('>>> Psss!! we dont support other reporter');
         }
     }
 
-    protected analyzeLeaks(leaksInfo: ILeakInformation[]) {
+    protected analyzeLeaks(scopeLeaks: IScopeLeak[]) {
 
-        for (let leak of leaksInfo) {
+        for (let leak of scopeLeaks) {
             if (doesScopeHasLeaks(leak)) {
                 console.log();
                 console.log(this.getIndentation(3), '- ' + leak.scopeDescription + ':');
@@ -83,9 +83,7 @@ export class ConsoleReporter {
         }
     }
 
-    protected analyzeLeak(leakInfo: ILeakInformation) {
-
-        let scopeLeak: IScopeLeak = leakInfo.leaksTypes;
+    protected analyzeLeak(scopeLeak: IScopeLeak) {
 
         if (scopeLeak.memberAssigns.length === 0
             && scopeLeak.literalAssigns.length === 0
