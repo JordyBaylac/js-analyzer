@@ -35,6 +35,7 @@ describe('GlobalVariablesStrategy', function () {
           }
 
           hello('asd'.length);
+          
         `
       );
 
@@ -51,7 +52,9 @@ describe('GlobalVariablesStrategy', function () {
 
     });
 
+
   });
+ 
 
   describe('# Global literal assign of literal value', function () {
 
@@ -318,6 +321,39 @@ describe('GlobalVariablesStrategy', function () {
       /// Assert      
       expect(scopeLeakProgram.globalDefinitions).to.have.length(0);
       expect(doesScopeHasLeaks(scopeLeakProgram)).to.be.false;
+
+    });
+
+  });
+
+
+  describe('# Global member uses', function () {
+
+    it('global member uses should be reported', function () {
+
+      /// Arrange
+      let ast = _constructAst(
+        `         
+          function hello(len) {
+            hello(n.ka('asd').length + len);
+          }
+
+          hello('asd'.length);
+          
+        `
+      );
+
+
+      /// Act
+      let scopeLeaks = _getScopeLeaks(ast);
+      let scopeLeakHello = scopeLeaks[1];
+
+
+      /// Assert
+
+      expect(scopeLeakHello.globalUses).to.have.length(1);
+      let memberUse = scopeLeakHello.globalUses[0];
+      expect(memberUse.name).to.equal("n");
 
     });
 

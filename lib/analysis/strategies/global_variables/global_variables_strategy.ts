@@ -217,23 +217,22 @@ export class GlobalVariablesStrategy implements IStrategy {
                     && varname.indexOf('JSON.') == -1) {
 
                     let firstObject = varname.split('.')[0];
-                    if (!utils.isVarDefined(firstObject, scopeChain)) {
+                    if (firstObject.length !== 0 && !utils.isVarDefined(firstObject, scopeChain)) {
                         description = '(member assign) ' + varname;
 
                         let leakType: ILeakType = { name: varname, description: description, location: Object.create(assignment.loc) };
                         leakTypes.memberAssigns.push(leakType);
                     }
                 }
-            } else
-                if (!utils.isMemberExpression(assignment.left)) {
-                    varname = assignment.left.name;
-                    if (!utils.isVarDefined(varname, scopeChain)) {
-                        description = '(literal assign) ' + varname;
+            } else if (!utils.isMemberExpression(assignment.left)) {
+                varname = assignment.left.name;
+                if (!utils.isVarDefined(varname, scopeChain)) {
+                    description = '(literal assign) ' + varname;
 
-                        let leakType: ILeakType = { name: varname, description: description, location: Object.create(assignment.loc) };
-                        leakTypes.literalAssigns.push(leakType);
-                    }
+                    let leakType: ILeakType = { name: varname, description: description, location: Object.create(assignment.loc) };
+                    leakTypes.literalAssigns.push(leakType);
                 }
+            }
 
         }
 
@@ -280,17 +279,7 @@ export class GlobalVariablesStrategy implements IStrategy {
 
                 uses = uses.concat(this.getGlobalUsesInNode(node["right"]));
 
-            } else if (utils.isMemberExpression(node["left"])) {
-
-                let leakType: ILeakType = this.getGlobalMemberUseLeakType(node["left"]);
-                uses.push(leakType);
-
-            } else if (utils.isMemberExpression(node["right"])) {
-
-                let leakType: ILeakType = this.getGlobalMemberUseLeakType(node["right"]);
-                uses.push(leakType);
-
-            }
+            } 
 
         } else if (utils.isCallExpression(node)) {
 
@@ -306,6 +295,11 @@ export class GlobalVariablesStrategy implements IStrategy {
                 }
             });
 
+        } else if (utils.isFinalMemberExpression(node)) {
+
+            let leakType: ILeakType = this.getGlobalMemberUseLeakType(node);
+            uses.push(leakType);
+
         }
 
         return uses.filter(u => u !== null && ["__func__", "__path__", "__file__", "Math", "Object", "Array", "JSON", "this", "xxNode", "xxNodeSet"].indexOf(u.name) === -1);
@@ -315,7 +309,7 @@ export class GlobalVariablesStrategy implements IStrategy {
         if (utils.isMemberExpression(node)) {
             let varname = utils.compoundMemberName(node);
             let firstObject = varname.split('.')[0];
-            if(firstObject.length === 0)
+            if (firstObject.length === 0)
                 return null;
             let description = '(global member use) ' + varname;
             return { name: firstObject, description: description, location: Object.create(node.loc) };

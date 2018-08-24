@@ -13,6 +13,10 @@ export function isMemberExpression(node) {
     return node.type == 'MemberExpression';
 }
 
+export function isFinalMemberExpression(node) {
+    return isMemberExpression(node) && isIdentifier(node.object);
+}
+
 export function isFunctionDeclaration(node) {
     return node.type == 'FunctionDeclaration';
 }
