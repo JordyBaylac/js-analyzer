@@ -335,7 +335,7 @@ describe('GlobalVariablesStrategy', function () {
       let ast = _constructAst(
         `         
           function hello(len) {
-            hello(n.ka('asd').length + len);
+            hello(n.ka(len).length + len + hello(len));
           }
 
           hello('asd'.length);
