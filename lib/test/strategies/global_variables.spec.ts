@@ -23,6 +23,35 @@ describe('GlobalVariablesStrategy', function () {
     strategy = new GlobalVariablesStrategy();
   });
 
+  describe('# General scenarios where there should not be global variables', function(){
+    
+    it('literal string . length should not be recognized as global', function () {
+
+      /// Arrange
+      let ast = _constructAst(
+        `         
+          function hello(len) {
+            return len == 5;
+          }
+
+          hello('asd'.length);
+        `
+      );
+
+
+      /// Act
+      let scopeLeaks = _getScopeLeaks(ast)  ;
+      let scopeLeakProgram = scopeLeaks[0];
+
+
+      /// Assert
+
+      //no leaks
+      expect(doesScopeHasLeaks(scopeLeakProgram)).to.be.false;
+
+    });
+
+  });
 
   describe('# Global literal assign of literal value', function () {
 

@@ -315,6 +315,8 @@ export class GlobalVariablesStrategy implements IStrategy {
         if (utils.isMemberExpression(node)) {
             let varname = utils.compoundMemberName(node);
             let firstObject = varname.split('.')[0];
+            if(firstObject.length === 0)
+                return null;
             let description = '(global member use) ' + varname;
             return { name: firstObject, description: description, location: Object.create(node.loc) };
         }
