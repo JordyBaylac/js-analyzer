@@ -279,7 +279,7 @@ export class GlobalVariablesStrategy implements IStrategy {
 
                 uses = uses.concat(this.getGlobalUsesInNode(node["right"]));
 
-            } 
+            }
 
         } else if (utils.isCallExpression(node)) {
 
@@ -302,7 +302,12 @@ export class GlobalVariablesStrategy implements IStrategy {
 
         }
 
-        return uses.filter(u => u !== null && ["__func__", "__path__", "__file__", "Math", "Object", "Array", "JSON", "this", "xxNode", "xxNodeSet"].indexOf(u.name) === -1);
+        return uses.filter(u => u !== null
+            && ["__func__", "__path__", "__file__", "Math", "Object",
+                "Array", "JSON", "this", "xxNode", "xxNodeSet",
+                "String", "undefined", "null", "arguments", 
+                "Date", "Number", "Boolean"
+            ].indexOf(u.name) === -1);
     }
 
     protected getGlobalMemberUseLeakType(node): ILeakType {
