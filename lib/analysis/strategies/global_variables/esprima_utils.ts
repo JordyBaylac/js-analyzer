@@ -14,7 +14,7 @@ export function isMemberExpression(node) {
 }
 
 export function isFinalMemberExpression(node) {
-    return isMemberExpression(node) && isIdentifier(node.object);
+    return isMemberExpression(node) && (isIdentifier(node.object) || isThisExpression(node.object));
 }
 
 export function isFunctionDeclaration(node) {

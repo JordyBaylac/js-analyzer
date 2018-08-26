@@ -301,9 +301,11 @@ export class GlobalVariablesStrategy implements IStrategy {
 
         }
 
+        
+
         return uses.filter(u => u !== null
             && ["__func__", "__path__", "__file__", "Math", "Object",
-                "Array", "JSON", "this", "xxNode", "xxNodeSet",
+                "Array", "JSON", "xxNode", "xxNodeSet",
                 "String", "undefined", "null", "arguments", 
                 "Date", "Number", "Boolean"
             ].indexOf(u.name) === -1);
@@ -316,7 +318,7 @@ export class GlobalVariablesStrategy implements IStrategy {
             if (firstObject.length === 0)
                 return null;
             let description = '(global member use) ' + varname;
-            return { name: firstObject, description: description, location: Object.create(node.loc) };
+            return { name: firstObject === "this" ? varname : firstObject, description: description, location: Object.create(node.loc) };
         }
         return null;
     }
