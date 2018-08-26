@@ -210,7 +210,6 @@ export class GlobalVariablesStrategy implements IStrategy {
             if (utils.isMemberExpression(assignment.left)) {
                 varname = utils.compoundMemberName(assignment.left);
                 if (varname.indexOf('.prototype') == -1
-                    && varname.indexOf('this.') == -1
                     && varname.indexOf('Object.') == -1
                     && varname.indexOf('Array.') == -1
                     && varname.indexOf('Math.') == -1

@@ -52,7 +52,7 @@ describe('GlobalVariablesStrategy', function () {
 
   describe('# Global literal assign of literal value', function () {
 
-    it('assignments to global object\'s members should be reported as global literals', function () {
+    it('assignments to global object\'s members should be reported as global members', function () {
       /// Arrange
       const ast = _constructAst(
         `         
@@ -64,7 +64,23 @@ describe('GlobalVariablesStrategy', function () {
       const scopeLeakProgram = scopeLeaks[0];
 
       expect(doesScopeHasLeaks(scopeLeakProgram)).to.be.true;
-      expect(scopeLeakProgram.literalAssigns[0].name).to.equal("b");
+      expect(scopeLeakProgram.memberAssigns[0].name).to.equal("this.b");
+    });
+
+    it('assignments to function\'s caller should NOT be reported as global members', function () {
+      /// Arrange
+      const ast = _constructAst(
+        `         
+        function Person() {
+          this.name = "Juan";
+        }
+        `
+      );
+
+      const scopeLeaks = _getScopeLeaks(ast)  ;
+      const scopeLeakProgram = scopeLeaks[0];
+
+      expect(doesScopeHasLeaks(scopeLeakProgram)).to.be.false;
     });
 
     it('should report 1 leak on the program scope', function () {
