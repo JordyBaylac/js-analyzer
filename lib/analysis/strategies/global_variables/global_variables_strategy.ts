@@ -58,8 +58,8 @@ export class GlobalVariablesStrategy implements IStrategy {
                 let assignemtsInScope = assignmentsChain[assignmentsChain.length - 1];
 
                 if (utils.isVariableDeclarator(node)) {
+                    if (scopeChain.length > 1) currentScope.push(node.id.name);
 
-                    currentScope.push(node.id.name);
                     variableScope.push(node);
 
                 } else if (utils.isAssignmentExpression(node)) {
@@ -123,9 +123,9 @@ export class GlobalVariablesStrategy implements IStrategy {
                     let usesScope = usesChain.pop();
                     usesScope.filter((u: ILeakType) => !utils.isCatchArgument(u.name, catchsChain))
                         .forEach((s: ILeakType) => {
-                            if (!utils.isVarDefined(s.name, scopeChain) && !this.isLeakDuplicate(s, scopeLeak.globalUses)) {
-                                scopeLeak.globalUses.push(s);
-                            }
+                        if (!utils.isVarDefined(s.name, scopeChain) && !this.isLeakDuplicate(s, scopeLeak.globalUses)) {
+                            scopeLeak.globalUses.push(s);
+                        }
                         });
 
                     scopeChain.pop();

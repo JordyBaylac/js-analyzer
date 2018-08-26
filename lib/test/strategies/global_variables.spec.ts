@@ -24,18 +24,12 @@ describe('GlobalVariablesStrategy', function () {
   });
 
   describe('# General scenarios where there should not be global variables', function(){
-    
     it('literal string . length should not be recognized as global', function () {
 
       /// Arrange
       let ast = _constructAst(
         `         
-          function hello(len) {
-            return len == 5;
-          }
-
           hello('asd'.length);
-          
         `
       );
 
@@ -57,6 +51,21 @@ describe('GlobalVariablesStrategy', function () {
  
 
   describe('# Global literal assign of literal value', function () {
+
+    it('assignments to global object\'s members should be reported as global literals', function () {
+      /// Arrange
+      const ast = _constructAst(
+        `         
+          this.b = 5;
+        `
+      );
+
+      const scopeLeaks = _getScopeLeaks(ast)  ;
+      const scopeLeakProgram = scopeLeaks[0];
+
+      expect(doesScopeHasLeaks(scopeLeakProgram)).to.be.true;
+      expect(scopeLeakProgram.literalAssigns[0].name).to.equal("b");
+    });
 
     it('should report 1 leak on the program scope', function () {
 
@@ -232,7 +241,30 @@ describe('GlobalVariablesStrategy', function () {
 
       expect(scopeLeakHello.literalAssigns).to.have.length(0);
       expect(scopeLeakProgram.literalAssigns[0].name).to.equal("param");
+    });
 
+    it('null or undefined usages should be reported', () => {
+      const ast = _constructAst(
+        `
+          t.s = 5;
+        `
+      )
+    });
+
+    it('array elements should not be reported as globals', () => {
+      const ast = _constructAst(
+        `
+          function test() {
+            var myArray = ['AWESOME'];
+
+            myArray[0] = 3;
+          }
+        `);
+
+      const scopeLeaks = _getScopeLeaks(ast);
+      const functionScope = scopeLeaks[1];
+
+      expect(functionScope.literalAssigns.length).to.equal(0);
     });
 
     it('assigns inside expression should be reported', function () {
@@ -357,6 +389,44 @@ describe('GlobalVariablesStrategy', function () {
 
     });
 
-  });
+    it('global member uses should be reported even with var definition', function () {
+      const ast = _constructAst(
+        `         
+          var n;
 
+          function hello(len) {
+            hello(n.ka(len).length + len + hello(len));
+          }
+
+          hello('asd'.length);
+          
+        `
+      );
+      const scopeLeaks = _getScopeLeaks(ast);
+      const scopeLeakHello = scopeLeaks[1];
+
+      expect(scopeLeakHello.globalUses).to.have.length(1);
+      const memberUse = scopeLeakHello.globalUses[0];
+      expect(memberUse.name).to.equal("n");
+    });
+
+    it('global member uses should be reported even with var definition', function () {
+      const ast = _constructAst(
+        `         
+          function hello(len) {
+            var n;
+
+            hello(n.ka(len).length + len + hello(len));
+          }
+
+          hello('asd'.length);
+          
+        `
+      );
+      const scopeLeaks = _getScopeLeaks(ast);
+      const scopeLeakHello = scopeLeaks[1];
+
+      expect(scopeLeakHello.globalUses).to.have.length(0);
+    });
+  });
 });
