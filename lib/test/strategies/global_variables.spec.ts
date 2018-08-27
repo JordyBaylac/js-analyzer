@@ -8,7 +8,8 @@ import {
 import { IStrategyResult } from "../../analysis/strategies/i_strategy";
 import { expect } from "chai";
 
-describe("GlobalVariablesStrategy", function() {
+describe("GlobalVariablesStrategy", function () {
+
   let strategy: GlobalVariablesStrategy;
 
   function _constructAst(code: string): esprima.Program {
@@ -21,12 +22,12 @@ describe("GlobalVariablesStrategy", function() {
     return result.leaks;
   }
 
-  before(function() {
+  before(function () {
     strategy = new GlobalVariablesStrategy();
   });
 
-  describe("# General scenarios where there should not be global variables", function() {
-    it("literal string . length should not be recognized as global", function() {
+  describe("# General scenarios where there should not be global variables", function () {
+    it("literal string . length should not be recognized as global", function () {
       /// Arrange
       let ast = _constructAst(
         `         
@@ -45,8 +46,10 @@ describe("GlobalVariablesStrategy", function() {
     });
   });
 
+
   describe("# This tests", () => {
-    it("usages of global variables within this should be reported", function() {
+
+    it("usages of global variables within this should be reported", function () {
       const ast = _constructAst(
         `         
           this.b + 5;
@@ -60,7 +63,7 @@ describe("GlobalVariablesStrategy", function() {
       expect(scopeLeakProgram.globalUses[0].name).to.equal("this.b");
     });
 
-    it("assignments to global object's members should be reported as global members", function() {
+    it("assignments to global object's members should be reported as global members", function () {
       const ast = _constructAst(
         `         
           this.b = 5;
@@ -74,7 +77,7 @@ describe("GlobalVariablesStrategy", function() {
       expect(scopeLeakProgram.memberAssigns[0].name).to.equal("this.b");
     });
 
-    it("assignments to function's caller should NOT be reported as global members", function() {
+    it("assignments to function's caller should NOT be reported as global members", function () {
       const ast = _constructAst(
         `         
         function Person() {
@@ -88,10 +91,13 @@ describe("GlobalVariablesStrategy", function() {
 
       expect(doesScopeHasLeaks(scopeLeakProgram)).to.be.false;
     });
+
   });
 
-  describe("# Global literal assign of literal value", function() {
-    it("should report 1 leak on the program scope", function() {
+
+  describe("# Global literal assign of literal value", function () {
+
+    it("should report 1 leak on the program scope", function () {
       /// Arrange
       let ast = _constructAst(
         `
@@ -112,7 +118,7 @@ describe("GlobalVariablesStrategy", function() {
       expect(literalAssign.name).to.equal("leakedVariable");
     });
 
-    it("should report 1 leak on a function scope", function() {
+    it("should report 1 leak on a function scope", function () {
       /// Arrange
       let ast = _constructAst(
         `
@@ -135,7 +141,7 @@ describe("GlobalVariablesStrategy", function() {
       expect(literalAssign.name).to.equal("leakedVariableInsideFunction");
     });
 
-    it("should report 1 leak on a function scope inside another function", function() {
+    it("should report 1 leak on a function scope inside another function", function () {
       /// Arrange
       let ast = _constructAst(
         `          
@@ -162,7 +168,7 @@ describe("GlobalVariablesStrategy", function() {
       expect(literalAssign.name).to.equal("leakedVariableInside2ndFunction");
     });
 
-    it("should report 3 leaks", function() {
+    it("should report 3 leaks", function () {
       /// Arrange
       let ast = _constructAst(
         `         
@@ -197,7 +203,7 @@ describe("GlobalVariablesStrategy", function() {
       expect(scopeLeakWorld.literalAssigns[0].name).to.equal("leakedVariable");
     });
 
-    it("assigns of function arguments should not be reported as globals", function() {
+    it("assigns of function arguments should not be reported as globals", function () {
       /// Arrange
       let ast = _constructAst(
         `         
@@ -219,7 +225,7 @@ describe("GlobalVariablesStrategy", function() {
       expect(doesScopeHasLeaks(scopeLeakHello)).to.be.false;
     });
 
-    it("globals in parent scope can be shallowed by local variable in child scope", function() {
+    it("globals in parent scope can be shallowed by local variable in child scope", function () {
       /// Arrange
       let ast = _constructAst(
         `   
@@ -262,7 +268,7 @@ describe("GlobalVariablesStrategy", function() {
       expect(functionScope.literalAssigns.length).to.equal(0);
     });
 
-    it("assigns inside expression should be reported", function() {
+    it("assigns inside expression should be reported", function () {
       /// Arrange
       let ast = _constructAst(
         `   
@@ -291,10 +297,36 @@ describe("GlobalVariablesStrategy", function() {
       expect(scopeLeakProgram.literalAssigns[1].name).to.equal("i");
       expect(scopeLeakProgram.literalAssigns[2].name).to.equal("a");
     });
+
   });
 
-  describe("# Global definition of variables", function() {
-    it("should report leakage if variables are defined in Program scope", function() {
+
+  describe("# Global member assigns", function () {
+
+    it("should report global member assign when left part of assign is complex", function () {
+      /// Arrange
+      let ast = _constructAst(
+        `             
+          myModule.someFunc('asd').attrs[3] = 45;
+        `
+      );
+
+      /// Act
+      let scopeLeaks = _getScopeLeaks(ast);
+      let scopeLeakProgram = scopeLeaks[0];
+
+      /// Assert
+      expect(scopeLeakProgram.globalUses).to.have.length(1);
+      expect(scopeLeakProgram.globalDefinitions[0].name).to.equal("myModule");
+
+    });
+
+  });
+
+
+  describe("# Global definition of variables", function () {
+
+    it("should report leakage if variables are defined in Program scope", function () {
       /// Arrange
       let ast = _constructAst(
         `
@@ -316,7 +348,7 @@ describe("GlobalVariablesStrategy", function() {
       expect(leak2.name).to.equal("globalVariable2");
     });
 
-    it("should not report leakage if variables are defined inside another scope", function() {
+    it("should not report leakage if variables are defined inside another scope", function () {
       /// Arrange
       let ast = _constructAst(
         `
@@ -335,10 +367,38 @@ describe("GlobalVariablesStrategy", function() {
       expect(scopeLeakProgram.globalDefinitions).to.have.length(0);
       expect(doesScopeHasLeaks(scopeLeakProgram)).to.be.false;
     });
+
   });
 
-  describe("# Global member uses", function() {
-    it("global member uses should be reported", function() {
+
+  describe("# Global uses", function () {
+
+    it("should report global usage if passed as init value of variable declaration", function () {
+      /// Arrange
+      let ast = _constructAst(
+        `             
+          var f = j;
+        `
+      );
+
+      /// Act
+      let scopeLeaks = _getScopeLeaks(ast);
+      let scopeLeakProgram = scopeLeaks[0];
+
+      /// Assert
+      expect(scopeLeakProgram.globalDefinitions).to.have.length(1);
+      expect(scopeLeakProgram.globalUses).to.have.length(1);
+      expect(scopeLeakProgram.globalDefinitions[0].name).to.equal("f");
+      expect(scopeLeakProgram.globalUses[0].name).to.equal("j");
+
+    });
+
+  });
+
+
+  describe("# Global member uses", function () {
+
+    it("global member uses should be reported", function () {
       /// Arrange
       let ast = _constructAst(
         `         
@@ -362,7 +422,7 @@ describe("GlobalVariablesStrategy", function() {
       expect(memberUse.name).to.equal("n");
     });
 
-    it("global member uses should be reported even with var definition", function() {
+    it("global member uses should be reported even with var definition", function () {
       const ast = _constructAst(
         `         
           var n;
@@ -383,7 +443,7 @@ describe("GlobalVariablesStrategy", function() {
       expect(memberUse.name).to.equal("n");
     });
 
-    it("global member uses should be reported even with var definition", function() {
+    it("member uses should not be reported as globals when defined with var in a scope != Program scope", function () {
       const ast = _constructAst(
         `         
           function hello(len) {
@@ -401,5 +461,7 @@ describe("GlobalVariablesStrategy", function() {
 
       expect(scopeLeakHello.globalUses).to.have.length(0);
     });
+
   });
+
 });

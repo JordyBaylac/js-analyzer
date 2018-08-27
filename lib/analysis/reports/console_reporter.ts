@@ -108,7 +108,7 @@ export class ConsoleReporter {
             console.log();
         }
 
-        if (scopeLeak.globalDefinitions && scopeLeak.globalDefinitions.length > 0) {
+        if (scopeLeak.globalDefinitions.length > 0) {
             console.log(this.getIndentation(4), '- Possible Global definitions leaks (' + scopeLeak.globalDefinitions.length + ')', ':');
             for (let globalDefinition of scopeLeak.globalDefinitions) {
                 console.log(this.getIndentation(5), '-', globalDefinition.name, 'on line', globalDefinition.location.start.line, 'col', globalDefinition.location.start.column);
@@ -116,7 +116,7 @@ export class ConsoleReporter {
             console.log();
         }
 
-        if (scopeLeak.globalUses && scopeLeak.globalUses.length > 0) {
+        if (scopeLeak.globalUses.length > 0) {
             console.log(this.getIndentation(4), '- Possible Global uses leaks (' + scopeLeak.globalUses.length + ')', ':');
             for (let globalUse of scopeLeak.globalUses) {
                 console.log(this.getIndentation(5), '-', globalUse.name, 'on line', globalUse.location.start.line, 'col', globalUse.location.start.column);

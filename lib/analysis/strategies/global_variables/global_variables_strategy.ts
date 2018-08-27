@@ -1,5 +1,5 @@
 import { IStrategy, IStrategyResult, IStrategySingleResult, StrategiesTypes } from '../i_strategy';
-import { Node, SourceLocation } from 'estree';
+import { Node, SourceLocation, VariableDeclarator } from 'estree';
 import { Program } from 'esprima';
 import { traverse } from 'estraverse';
 import * as utils from './esprima_utils';
@@ -123,9 +123,9 @@ export class GlobalVariablesStrategy implements IStrategy {
                     let usesScope = usesChain.pop();
                     usesScope.filter((u: ILeakType) => !utils.isCatchArgument(u.name, catchsChain))
                         .forEach((s: ILeakType) => {
-                        if (!utils.isVarDefined(s.name, scopeChain) && !this.isLeakDuplicate(s, scopeLeak.globalUses)) {
-                            scopeLeak.globalUses.push(s);
-                        }
+                            if (!utils.isVarDefined(s.name, scopeChain) && !this.isLeakDuplicate(s, scopeLeak.globalUses)) {
+                                scopeLeak.globalUses.push(s);
+                            }
                         });
 
                     scopeChain.pop();
@@ -259,15 +259,13 @@ export class GlobalVariablesStrategy implements IStrategy {
         if (utils.isBinaryExpression(node)) {
 
             if (utils.isIdentifier(node["left"])) {
-                let varname = node["left"].name;
-                let description = '(global use) ' + varname;
-                let leakType: ILeakType = { name: varname, description: description, location: Object.create(node["left"].loc) };
+                
+                let leakType: ILeakType = this.getIdentiferUseLeakType(node["left"]);
                 uses.push(leakType);
 
             } else if (utils.isIdentifier(node["right"])) {
-                let varname = node["right"].name;
-                let description = '(global use) ' + varname;
-                let leakType: ILeakType = { name: varname, description: description, location: Object.create(node["right"].loc) };
+                
+                let leakType: ILeakType = this.getIdentiferUseLeakType(node["right"]);
                 uses.push(leakType);
 
             } else if (utils.isBinaryExpression(node["left"])) {
@@ -284,13 +282,15 @@ export class GlobalVariablesStrategy implements IStrategy {
 
             node["arguments"].forEach(a => {
                 if (utils.isIdentifier(a)) {
-                    let varname = a.name;
-                    let description = '(global use) ' + varname;
-                    let leakType: ILeakType = { name: varname, description: description, location: Object.create(a.loc) };
+
+                    let leakType: ILeakType = this.getIdentiferUseLeakType(a);
                     uses.push(leakType);
+
                 } else if (utils.isMemberExpression(a)) {
+
                     let leakType: ILeakType = this.getGlobalMemberUseLeakType(a);
                     uses.push(leakType);
+
                 }
             });
 
@@ -299,16 +299,30 @@ export class GlobalVariablesStrategy implements IStrategy {
             let leakType: ILeakType = this.getGlobalMemberUseLeakType(node);
             uses.push(leakType);
 
+        } else if (utils.isVariableDeclarator(node) && (<VariableDeclarator>node).init) {
+
+            let leakType: ILeakType = this.getIdentiferUseLeakType((<VariableDeclarator>node).init);
+            uses.push(leakType);
+
         }
 
-        
+
 
         return uses.filter(u => u !== null
             && ["__func__", "__path__", "__file__", "Math", "Object",
                 "Array", "JSON", "xxNode", "xxNodeSet",
-                "String", "undefined", "null", "arguments", 
+                "String", "undefined", "null", "arguments",
                 "Date", "Number", "Boolean"
             ].indexOf(u.name) === -1);
+    }
+
+    protected getIdentiferUseLeakType(node): ILeakType {
+        if (utils.isIdentifier(node)) {
+            let varname = node.name;
+            let description = '(global use) ' + varname;
+            return { name: varname, description: description, location: Object.create(node.loc) };
+        }
+        return null;
     }
 
     protected getGlobalMemberUseLeakType(node): ILeakType {
