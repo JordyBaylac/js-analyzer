@@ -73,6 +73,7 @@ export class GlobalVariablesStrategy implements IStrategy {
                         currentScope.push(params[i].name);
                     }
 
+
                     if (node.id && utils.isIdentifier(node.id) && node.id.name) {
                         currentScope.push(node.id.name);
                         let previousScope = (scopeChain.length - 2) >= 0 ? scopeChain[scopeChain.length - 2] : null;
@@ -87,9 +88,12 @@ export class GlobalVariablesStrategy implements IStrategy {
 
                 let scopeUses = this.getGlobalUsesInNode(node);
                 if (scopeUses.length > 0) {
-                    // let result = scopeUses.filter( (u: ILeakType) => usesInScope.find((s: ILeakType)=> this.compareLeaks(u, s)) == null );
-                    // usesInScope.push(...result);
-                    usesInScope.push(...scopeUses);
+                    if (scopeChain.length === 1) { //Program scope
+                        usesInScope.push(...scopeUses);
+                    } else {
+                        let omitThis = scopeUses.filter((u: ILeakType) => !u.name.startsWith("this.") );
+                        usesInScope.push(...omitThis);
+                    }                    
                 }
 
             },

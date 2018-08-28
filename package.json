@@ -16,6 +16,7 @@
     "esprima": "^4.0.1",
     "estraverse": "^4.2.0",
     "klaw": "^3.0.0",
+    "md5-file": "^4.0.0",
     "through2": "^2.0.3",
     "ts-node": "^7.0.1",
     "typescript": "^3.0.1"

@@ -4,6 +4,7 @@ import { IStrategy } from '../strategies/i_strategy';
 const klaw = require('klaw');
 const through2 = require('through2');
 const path = require('path');
+const md5File = require('md5-file');
 
 
 const JAVASCRIPT_EXTENSIONS = ['.xjs', '.js'];
@@ -27,7 +28,7 @@ export class DirectoryAnalyzer {
     }
 
     getStrategiesDescription() {
-        return '[' + this.strategies.map(s => s.constructor.name).join(',') + ']';        
+        return '[' + this.strategies.map(s => s.constructor.name).join(',') + ']';
     }
 
     async run() {
@@ -49,7 +50,7 @@ export class DirectoryAnalyzer {
     }
 
     protected async analyzeFiles(filesToProcess) {
-        
+
         for (var filePath of filesToProcess) {
             let fileAnalyzer = new FileAnalyzer(filePath, this.strategies);
             await fileAnalyzer.run();
@@ -58,7 +59,7 @@ export class DirectoryAnalyzer {
         }
     }
 
-    protected getAllFiles(dirPath) : Promise<string[]> {
+    protected getAllFiles(dirPath): Promise<string[]> {
 
         return new Promise((resolve, reject) => {
 
@@ -85,7 +86,8 @@ export class DirectoryAnalyzer {
                 next();
             });
 
-            const items: string[] = []; 
+            const itemsProcessed: { [key: string]: boolean } = {};
+            const items: string[] = [];
 
             klaw(dirPath, { filter: excludeHiddenFilter, preserveSymlinks: true })
                 .on('error', err => excludeDirFilter.emit('error', err))
@@ -93,7 +95,13 @@ export class DirectoryAnalyzer {
                 .on('error', err => excludeNonJavascriptFilter.emit('error', err))
                 .pipe(excludeNonJavascriptFilter)
                 .on('error', err => reject(err))
-                .on('data', item => items.push(item.path))
+                .on('data', item => {
+                    const hash = md5File.sync(item.path);
+                    if (!itemsProcessed[hash]) {
+                        itemsProcessed[hash] = true;
+                        items.push(item.path);
+                    }
+                })
                 .on('end', () => {
                     resolve(items);
                 });
